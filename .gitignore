@@ -1,0 +1,7 @@
+build
+llvm-install
+runtime/MetalRuntime/MetalRuntime.xcodeproj/project.xcworkspace/xcuserdata
+runtime/MetalRuntime/MetalRuntime.xcodeproj/xcuserdata
+runtime/MetalRuntimeExample/MetalRuntimeExample.xcodeproj/project.xcworkspace/xcuserdata
+runtime/MetalRuntimeExample/MetalRuntimeExample.xcodeproj/xcuserdata
+.idea
