@@ -18,7 +18,7 @@ include "mlir/IR/OpBase.td"
 def Metal_Dialect : Dialect {
     let name = "metal";
     let summary = "Metal MLIR dialect.";
-    let cppNamespace = "metal";
+    let cppNamespace = "::mlir::metal";
 
     let extraClassDeclaration = [{
       Operation *materializeConstant(OpBuilder &builder, Attribute value,

@@ -30,7 +30,7 @@ def ModuleOp : Metal_Op<"module", [
 
   let skipDefaultBuilders = 1;
 
-  let builders = [OpBuilder<"OpBuilder &builder, OperationState &result">];
+  let builders = [OpBuilderDAG<(ins)>];
 
   let extraClassDeclaration = [{
     void insert(Block::iterator insertPt, Operation *op);
@@ -57,9 +57,8 @@ def KernelOp : Metal_Op<"kernel", [SingleBlockImplicitTerminator<"ReturnOp">,
   let regions = (region SizedRegion<1>:$bodyRegion);
 
   let builders = [
-    OpBuilder<"OpBuilder &b, OperationState &state, StringRef name, "
-              "llvm::SmallVectorImpl<Type> &buffers, "
-              "llvm::SmallVectorImpl<bool> &isAddressSpaceDevice">
+    OpBuilderDAG<(ins "StringRef":$name, "llvm::SmallVectorImpl<Type>&":$buffers,
+                      "llvm::SmallVectorImpl<bool>&":$isAddressSpaceDevice)>
   ];
 
   let verifier = [{ return ::verify(*this); }];
@@ -91,7 +90,7 @@ def ConstantOp : Metal_Op<"constant", [ConstantLike, NoSideEffect]> {
   let results = (outs Metal_Type);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Attribute value">
+    OpBuilderDAG<(ins "Attribute":$value)>
   ];
 
   let verifier = [{ return ::verify(*this); }];
@@ -110,9 +109,8 @@ def AllocaOp : Metal_Op<"alloca"> {
   let results = (outs Metal_MemRefType);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, "
-              "MetalMemRefType type", [{
-      state.addTypes(type);
+    OpBuilderDAG<(ins "MetalMemRefType":$type), [{
+      $_state.addTypes(type);
     }]>
   ];
 
@@ -141,9 +139,7 @@ def GetElementOp : Metal_Op<"get_element", [NoSideEffect]> {
   let arguments = (ins Metal_MemRefType:$memref, UI32:$index);
   let results = (outs Metal_Type:$result);
 
-  let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, Value memref, "
-              "Value index">];
+  let builders = [OpBuilderDAG<(ins "Value":$memref, "Value":$index)>];
 
   let verifier = [{ return ::verify(*this); }];
 
@@ -158,8 +154,7 @@ def ThreadIdOp : Metal_Op<"thread_id", [NoSideEffect]> {
   let arguments = (ins StrAttr:$dimension);
   let results = (outs UI32);
 
-  let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, StringRef dimension">];
+  let builders = [OpBuilderDAG<(ins "StringRef":$dimension)>];
 
   let verifier = [{ return ::verify(*this); }];
 
@@ -197,8 +192,7 @@ def UnaryExpOp : Metal_Op<"unary_exp", [NoSideEffect]> {
   let results = (outs Metal_Type);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, UnaryExpOperator "
-              "unaryOperator, Value argument">
+    OpBuilderDAG<(ins "UnaryExpOperator":$unaryOperator, "Value":$argument)>
   ];
 
   let verifier = [{ return ::verify(*this); }];
@@ -249,8 +243,7 @@ def BinaryExpOp : Metal_Op<"binary_exp", [NoSideEffect]> {
   let results = (outs Metal_Type);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, "
-              "BinaryExpOperator binaryOperator, Value lhs, Value rhs">
+    OpBuilderDAG<(ins "BinaryExpOperator":$binaryOperator, "Value":$lhs, "Value":$rhs)>
   ];
 
   let verifier = [{ return ::verify(*this); }];
@@ -276,9 +269,8 @@ def IfOp : Metal_Op<"if", [RecursiveSideEffects, NoRegionArguments]> {
   let regions = (region SizedRegion<1>:$thenRegion, AnyRegion:$elseRegion);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, Value cond, "
-              "function_ref<void(OpBuilder &, Location)> thenBuilder, "
-              "function_ref<void(OpBuilder &, Location)> elseBuilder =  nullptr">
+    OpBuilderDAG<(ins "Value":$cond, "function_ref<void(OpBuilder &, Location)>":$thenBuilder,
+                  CArg<"function_ref<void(OpBuilder &, Location)>", "nullptr">:$elseBuilder)>
   ];
 
   let printer = [{ return ::print(p, *this); }];
@@ -293,9 +285,8 @@ def WhileOp : Metal_Op<"while", [RecursiveSideEffects, NoRegionArguments]> {
   let regions = (region SizedRegion<1>:$conditionRegion, SizedRegion<1>:$bodyRegion);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, "
-              "function_ref<void(OpBuilder &, Location)> conditionBuilder, "
-              "function_ref<void(OpBuilder &, Location)> bodyBuilder">
+    OpBuilderDAG<(ins "function_ref<void(OpBuilder &, Location)>":$conditionBuilder,
+                      "function_ref<void(OpBuilder &, Location)>":$bodyBuilder)>
   ];
 
   let verifier = [{ return ::verify(*this); }];
@@ -329,9 +320,7 @@ def ReleaseOp : Metal_Op<"release"> {
 def DeviceMakeDefaultOp : Metal_Op<"device_make_default"> {
   let results = (outs Index:$device);
 
-  let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result">
-  ];
+  let builders = [OpBuilderDAG<(ins)>];
 
   let assemblyFormat = "attr-dict `:` type(results)";
 }
@@ -341,7 +330,7 @@ def DeviceMakeCommandQueueOp : Metal_Op<"device_make_command_queue"> {
   let results = (outs Index:$commandQueue);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Value device">
+    OpBuilderDAG<(ins "Value":$device)>
   ];
 
   let assemblyFormat = "$device attr-dict `:` functional-type(operands, results)";
@@ -354,8 +343,8 @@ def DeviceMakeBufferOp : Metal_Op<"device_make_buffer"> {
   let results = (outs Index:$bufferOp);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Value device, "
-              "Value isStorageModeManaged, Value count, Value sizeType">
+    OpBuilderDAG<(ins "Value":$device, "Value":$isStorageModeManaged, "Value":$count, 
+                      "Value":$sizeType)>
   ];
 
   let assemblyFormat = "$device `,`$isStorageModeManaged `,` $count `,` $sizeType "
@@ -374,8 +363,7 @@ def BufferGetContentsOp : Metal_Op<"buffer_get_contents"> {
   let results = (outs AnyMemRef);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Value device, "
-              "Type elementType">
+    OpBuilderDAG<(ins "Value":$device, "Type":$elementType)>
   ];
 
   let verifier = [{ return ::verify(*this); }];
@@ -393,8 +381,8 @@ def CommandQueueMakeCommandBufferOp : Metal_Op<"command_queue_make_command_buffe
   let results = (outs Index);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Value commandQueue, "
-              "StringRef functionName, Value width, Value height, Value depth">
+    OpBuilderDAG<(ins "Value":$commandQueue, "StringRef":$functionName, 
+                      "Value":$width, "Value":$height, "Value":$depth)>
   ];
 
   let printer = [{ return ::print(p, *this); }];

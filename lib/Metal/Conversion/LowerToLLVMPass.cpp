@@ -7,10 +7,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "Metal/Conversion/MetalToLLVM.h"
-#include "Metal/Dialect/MetalOps.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -21,6 +19,10 @@ namespace {
 struct LLVMLoweringPass
     : public PassWrapper<LLVMLoweringPass, OperationPass<ModuleOp>> {
 
+  void getDependentDialects(DialectRegistry &registry) const override {
+    registry.insert<LLVM::LLVMDialect>();
+  }
+
   void runOnOperation() final {
     LLVMConversionTarget target(getContext());
     target.addLegalOp<ModuleOp, ModuleTerminatorOp>();
@@ -30,7 +32,8 @@ struct LLVMLoweringPass
     populateStdToLLVMConversionPatterns(typeConverter, patterns);
     populateMetalToLLVMConversionPatterns(patterns, &getContext());
 
-    if (failed(applyFullConversion(getOperation(), target, patterns)))
+    if (failed(
+            applyFullConversion(getOperation(), target, std::move(patterns))))
       signalPassFailure();
   }
 };

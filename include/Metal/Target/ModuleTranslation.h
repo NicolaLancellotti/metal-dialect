@@ -10,7 +10,7 @@
 #define METAL_MODULETRANSLATION_H
 
 #include "Metal/Dialect/MetalOps.h"
-#include "mlir/IR/Module.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "llvm/Support/raw_ostream.h"
 #include <llvm/Support/FileSystem.h>
 #include <map>

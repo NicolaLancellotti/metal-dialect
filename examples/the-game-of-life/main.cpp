@@ -275,9 +275,6 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
   llvm::SmallVector<mlir::Type, 1> result_types{builder.getI32Type()};
 
   // Types
-  auto llvmDialect =
-      builder.getContext()->getRegisteredDialect<mlir::LLVM::LLVMDialect>();
-  auto llvmI32Ty = mlir::LLVM::LLVMType::getInt64Ty(llvmDialect);
   auto i32Ty = builder.getIntegerType(32);
   auto indexTy = builder.getIndexType();
 
@@ -310,12 +307,10 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
   auto index1 = builder.create<mlir::ConstantIndexOp>(loc, 1);
   auto index2 = builder.create<mlir::ConstantIndexOp>(loc, 2);
   auto index3 = builder.create<mlir::ConstantIndexOp>(loc, 3);
-  auto newLine = builder.create<mlir::LLVM::ConstantOp>(
-      loc, llvmI32Ty, builder.getI32IntegerAttr(10));
-  auto char1 = builder.create<mlir::LLVM::ConstantOp>(
-      loc, llvmI32Ty, builder.getI32IntegerAttr(49));
-  auto char0 = builder.create<mlir::LLVM::ConstantOp>(
-      loc, llvmI32Ty, builder.getI32IntegerAttr(48));
+
+  auto newLine = builder.create<mlir::ConstantIntOp>(loc, 10, 32);
+  auto char1 = builder.create<mlir::ConstantIntOp>(loc, 49, 32);
+  auto char0 = builder.create<mlir::ConstantIntOp>(loc, 48, 32);
 
 #ifdef littleMatrix
   auto row = 5;

@@ -14,8 +14,7 @@
 using namespace mlir;
 using namespace mlir::metal;
 
-MetalDialect::MetalDialect(mlir::MLIRContext *context)
-    : Dialect(getDialectNamespace(), context) {
+void MetalDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
 #include "Metal/Dialect/MetalOps.cpp.inc"

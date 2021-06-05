@@ -9,11 +9,8 @@
 #include "Metal/Dialect/MetalOps.h"
 #include "Metal/Dialect/MetalDialect.h"
 #include "Metal/Dialect/MetalMemRefType.h"
-#include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/OpImplementation.h"
-#include "mlir/IR/StandardTypes.h"
-#include "mlir/IR/Types.h"
 
 #include "Metal/Dialect/MetalOpsEnums.cpp.inc"
 
