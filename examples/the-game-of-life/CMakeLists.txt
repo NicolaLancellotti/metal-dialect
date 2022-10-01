@@ -7,13 +7,11 @@ target_link_libraries(examplesTheGameOfLife
         MLIRIR
         MLIRParser
         MLIRPass
-        MLIRTranslation
-        MLIRSPIRV
-        MLIRStandardToLLVM
-        MLIRSCFToStandard
+        MLIRTranslateLib
+        MLIRSPIRVDialect
+        MLIRMemRefDialect
         MLIRSupport
         LLVMSupport
         MLIRMetal
         examplesUtility
 )
-

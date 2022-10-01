@@ -5,19 +5,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Metal/Dialect/MetalDialect.h"
-#include "Metal/Dialect/MetalOps.h"
+#include "metal/IR/MetalDialect.h"
+#include "metal/IR/MetalOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/DialectImplementation.h"
 
 using namespace mlir;
 using namespace mlir::metal;
 
-MetalDialect::MetalDialect(mlir::MLIRContext *context)
-    : Dialect(getDialectNamespace(), context) {
+#include "metal/IR/MetalOpsDialect.cpp.inc"
+
+void MetalDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
-#include "Metal/Dialect/MetalOps.cpp.inc"
+#include "metal/IR/MetalOps.cpp.inc"
       >();
   addTypes<MetalMemRefType>();
 }

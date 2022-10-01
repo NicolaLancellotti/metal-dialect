@@ -46,12 +46,8 @@ class MetalMemRefType
 public:
   using Base::Base;
 
-  static const unsigned MemRef = mlir::Type::FIRST_PRIVATE_EXPERIMENTAL_9_TYPE;
-
-  static bool kindof(unsigned kind) { return kind == MemRef; }
-
   static MetalMemRefType get(mlir::MLIRContext *ctx, Type type, uint32_t size) {
-    return Base::get(ctx, MemRef, size, type);
+    return Base::get(ctx, size, type);
   }
 
   Type getType() { return getImpl()->_type; }

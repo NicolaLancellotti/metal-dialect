@@ -8,8 +8,8 @@
 #ifndef METAL_MODULETRANSLATION_H
 #define METAL_MODULETRANSLATION_H
 
-#include "Metal/Dialect/MetalOps.h"
-#include "mlir/IR/Module.h"
+#include "metal/IR/MetalOps.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "llvm/Support/raw_ostream.h"
 #include <llvm/Support/FileSystem.h>
 #include <map>

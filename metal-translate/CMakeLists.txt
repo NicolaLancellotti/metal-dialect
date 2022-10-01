@@ -13,12 +13,12 @@ target_link_libraries(metal-translate
   PRIVATE
   ${dialect_libs}
   ${translation_libs}
-  MLIRIR
-  MLIRParser
-  MLIRPass
-  MLIRSPIRV
-  MLIRTranslation
-  MLIRSupport
+    MLIRIR
+    MLIRParser
+    MLIRPass
+    MLIRSPIRVDialect
+    MLIRTranslateLib
+    MLIRSupport
   )
 
 mlir_check_link_libraries(metal-translate)

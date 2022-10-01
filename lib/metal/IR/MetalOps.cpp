@@ -5,16 +5,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Metal/Dialect/MetalOps.h"
-#include "Metal/Dialect/MetalDialect.h"
-#include "Metal/Dialect/MetalMemRefType.h"
-#include "mlir/IR/Attributes.h"
+#include "metal/IR/MetalOps.h"
+#include "metal/IR/MetalDialect.h"
+#include "metal/IR/MetalMemRefType.h"
+#include "metal/IR/MetalOpsEnums.cpp.inc"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/OpImplementation.h"
-#include "mlir/IR/StandardTypes.h"
-#include "mlir/IR/Types.h"
-
-#include "Metal/Dialect/MetalOpsEnums.cpp.inc"
 
 using namespace mlir::metal;
 
@@ -37,17 +33,17 @@ void ModuleOp::push_back(Operation *op) {
   insert(Block::iterator(getBody()->getTerminator()), op);
 }
 
-static void print(mlir::OpAsmPrinter &printer, ModuleOp op) {
-  printer << "metal.module";
-  printer.printRegion(op.getRegion(),
+void ModuleOp::print(mlir::OpAsmPrinter &printer) {
+  printer << " ";
+  printer.printRegion(getRegion(),
                       /*printEntryBlockArgs=*/false,
                       /*printBlockTerminators=*/true);
 }
 
-static mlir::ParseResult parseModuleOp(mlir::OpAsmParser &parser,
-                                       mlir::OperationState &result) {
+mlir::ParseResult ModuleOp::parse(mlir::OpAsmParser &parser,
+                                  mlir::OperationState &result) {
   mlir::Region *body = result.addRegion();
-  if (parser.parseRegion(*body, llvm::None, llvm::None))
+  if (parser.parseRegion(*body, llvm::None))
     return mlir::failure();
   ModuleOp::ensureTerminator(*body, parser.getBuilder(), result.location);
   return mlir::success();
@@ -69,15 +65,15 @@ void KernelOp::build(OpBuilder &builder, OperationState &result, StringRef name,
   auto block = builder.createBlock(bodyRegion);
   for (auto type : buffers) {
     auto memref = MetalMemRefType::get(builder.getContext(), type, 0);
-    block->addArguments(memref);
+    block->addArguments(memref, result.location);
   }
 }
 
 mlir::Block &KernelOp::getEntryBlock() { return getRegion().front(); }
 
-static mlir::LogicalResult verify(KernelOp op) {
+mlir::LogicalResult KernelOp::verify() {
   auto index = -1;
-  for (auto it : llvm::enumerate(op.getBuffers())) {
+  for (auto it : llvm::enumerate(getBuffers())) {
     auto memRef = it.value().getType().dyn_cast<mlir::metal::MetalMemRefType>();
     if (!memRef) {
       index = it.index();
@@ -102,7 +98,7 @@ static mlir::LogicalResult verify(KernelOp op) {
     break;
   }
   if (index != -1)
-    return op.emitOpError() << "type #" << index << " must be compatible type";
+    return emitOpError() << "type #" << index << " must be compatible type";
   else
     return mlir::success();
 }
@@ -115,24 +111,25 @@ mlir::MutableArrayRef<mlir::BlockArgument> KernelOp::getBuffers() {
   return bodyRegion().getBlocks().begin()->getArguments();
 }
 
-static void print(mlir::OpAsmPrinter &printer, KernelOp op) {
-  printer << "metal.kernel " << op.name();
-  printer << " address_space_device";
-  printer.printAttribute(op.address_space_device());
-  printer.printRegion(op.getRegion(),
+void KernelOp::print(mlir::OpAsmPrinter &printer) {
+  printer << " " << name();
+  printer << " address_space_device ";
+  printer.printAttribute(address_space_device());
+  printer << " ";
+  printer.printRegion(getRegion(),
                       /*printEntryBlockArgs=*/true,
                       /*printBlockTerminators=*/true);
 }
 
-static mlir::ParseResult parseKernelOp(mlir::OpAsmParser &parser,
-                                       mlir::OperationState &result) {
+mlir::ParseResult KernelOp::parse(mlir::OpAsmParser &parser,
+                                  mlir::OperationState &result) {
   llvm::StringRef name;
   mlir::Region *body = result.addRegion();
   mlir::Attribute value;
   if (parser.parseKeyword(&name) ||
       parser.parseKeyword("address_space_device") ||
       parser.parseAttribute(value, "address_space_device", result.attributes) ||
-      parser.parseRegion(*body, llvm::None, llvm::None))
+      parser.parseRegion(*body, llvm::None))
     return mlir::failure();
 
   result.addAttribute("name", parser.getBuilder().getStringAttr(name));
@@ -149,18 +146,18 @@ void ConstantOp::build(OpBuilder &builder, OperationState &state,
   state.addTypes(value.getType());
 }
 
-static mlir::LogicalResult verify(ConstantOp op) {
-  auto value = op.value();
-  auto type = op.getType();
+mlir::LogicalResult ConstantOp::verify() {
+  auto value = this->value();
+  auto type = getType();
 
   if (value.getType() != type)
-    return op.emitOpError() << "requires attribute's type (" << value.getType()
-                            << ") to match op's return type (" << type << ")";
+    return emitOpError() << "requires attribute's type (" << value.getType()
+                         << ") to match op's return type (" << type << ")";
   return mlir::success();
 }
 
-static mlir::ParseResult parseConstantOp(mlir::OpAsmParser &parser,
-                                         mlir::OperationState &result) {
+mlir::ParseResult ConstantOp::parse(mlir::OpAsmParser &parser,
+                                    mlir::OperationState &result) {
   mlir::Attribute value;
   if (parser.parseAttribute(value, "value", result.attributes))
     return mlir::failure();
@@ -169,10 +166,10 @@ static mlir::ParseResult parseConstantOp(mlir::OpAsmParser &parser,
   return mlir::success();
 }
 
-static void print(mlir::OpAsmPrinter &printer, ConstantOp op) {
-  printer << "metal.constant ";
-  printer.printOptionalAttrDict(op.getAttrs(), {"value"});
-  printer << op.value();
+void ConstantOp::print(mlir::OpAsmPrinter &printer) {
+  printer << " ";
+  printer.printOptionalAttrDict((*this)->getAttrs(), {"value"});
+  printer << value();
 }
 
 mlir::OpFoldResult ConstantOp::fold(ArrayRef<Attribute> operands) {
@@ -183,9 +180,9 @@ mlir::OpFoldResult ConstantOp::fold(ArrayRef<Attribute> operands) {
 // AllocaOp
 //===----------------------------------------------------------------------===//
 
-static mlir::LogicalResult verify(AllocaOp op) {
-  if (op.getResult().getType().dyn_cast<MetalMemRefType>().getSize() == 0)
-    return op.emitOpError() << "memRef size cannot be 0";
+mlir::LogicalResult AllocaOp::verify() {
+  if (getResult().getType().dyn_cast<MetalMemRefType>().getSize() == 0)
+    return emitOpError() << "memRef size cannot be 0";
 
   return mlir::success();
 }
@@ -212,15 +209,15 @@ checkIndex(mlir::Operation *op, MetalMemRefType memRef, mlir::Value index) {
 // StoreOp
 //===----------------------------------------------------------------------===//
 
-static mlir::LogicalResult verify(StoreOp op) {
-  auto memRef = op.memref().getType().dyn_cast<MetalMemRefType>();
-  auto valueType = op.value().getType();
+mlir::LogicalResult StoreOp::verify() {
+  auto memRef = memref().getType().dyn_cast<MetalMemRefType>();
+  auto valueType = value().getType();
   auto memRefType = memRef.getType();
   if (memRefType != valueType)
-    return op.emitOpError() << "requires value's type (" << valueType
-                            << ") to match memref type (" << memRefType << ")";
+    return emitOpError() << "requires value's type (" << valueType
+                         << ") to match memref type (" << memRefType << ")";
 
-  return checkIndex(op, memRef, op.index());
+  return checkIndex(*this, memRef, index());
 }
 
 //===----------------------------------------------------------------------===//
@@ -235,15 +232,15 @@ void GetElementOp::build(OpBuilder &builder, OperationState &result,
   result.types.push_back(type);
 };
 
-static mlir::LogicalResult verify(GetElementOp op) {
-  auto memRef = op.memref().getType().dyn_cast<MetalMemRefType>();
-  auto resultType = op.result().getType();
+mlir::LogicalResult GetElementOp::verify() {
+  auto memRef = memref().getType().dyn_cast<MetalMemRefType>();
+  auto resultType = result().getType();
   auto memRefType = memRef.getType();
   if (memRefType != resultType)
-    return op.emitOpError() << "requires memref type (" << memRefType
-                            << ") to match return type (" << resultType << ")";
+    return emitOpError() << "requires memref type (" << memRefType
+                         << ") to match return type (" << resultType << ")";
 
-  return checkIndex(op, memRef, op.index());
+  return checkIndex(*this, memRef, index());
 }
 
 //===----------------------------------------------------------------------===//
@@ -260,21 +257,13 @@ void ThreadIdOp::build(OpBuilder &builder, OperationState &result,
 // LoadOp
 //===----------------------------------------------------------------------===//
 
-static mlir::LogicalResult verify(ThreadIdOp op) {
-  auto dim = op.dimension();
+mlir::LogicalResult ThreadIdOp::verify() {
+  auto dim = dimension();
   if (dim != "x" && dim != "y" && dim != "z")
-    return op.emitOpError() << "requires dimension to be `x` or `y` or `z`, "
-                            << "found `" << dim << "`";
+    return emitOpError() << "requires dimension to be `x` or `y` or `z`, "
+                         << "found `" << dim << "`";
 
   return mlir::success();
-}
-
-//===----------------------------------------------------------------------===//
-// CastOp
-//===----------------------------------------------------------------------===//
-
-mlir::OpFoldResult CastOp::fold(ArrayRef<Attribute> operands) {
-  return mlir::impl::foldCastOp(*this);
 }
 
 //===----------------------------------------------------------------------===//
@@ -289,23 +278,22 @@ void UnaryExpOp::build(OpBuilder &builder, OperationState &result,
   result.addOperands(argument);
 }
 
-static mlir::LogicalResult verify(UnaryExpOp op) {
-  auto argType = op.getType();
-  auto resultType = op.getResult().getType();
+mlir::LogicalResult UnaryExpOp::verify() {
+  auto argType = getType();
+  auto resultType = getResult().getType();
   if (argType != resultType)
-    return op.emitOpError() << "result type mismatch";
+    return emitOpError() << "result type mismatch";
 
   using OP = mlir::metal::UnaryExpOperator;
-  switch (op.unaryOperator()) {
+  switch (unaryOperator()) {
   case OP::notOp:
     if (!argType.isInteger(1))
-      return op.emitOpError() << "argument type must be i1";
+      return emitOpError() << "argument type must be i1";
     break;
   case OP::minusOp:
     if (argType.isInteger(1) ||
         (!argType.isSignedInteger() && !argType.isF16() && !argType.isF32()))
-      return op.emitOpError()
-             << "argument type must be signed integer or float";
+      return emitOpError() << "argument type must be signed integer or float";
     break;
   }
   return mlir::success();
@@ -371,22 +359,22 @@ void BinaryExpOp::build(OpBuilder &builder, OperationState &result,
   result.addOperands(rhs);
 }
 
-static mlir::LogicalResult verify(BinaryExpOp op) {
-  auto lhsType = op.lhs().getType();
-  auto rhsType = op.rhs().getType();
-  auto resultType = op.getResult().getType();
+mlir::LogicalResult BinaryExpOp::verify() {
+  auto lhsType = lhs().getType();
+  auto rhsType = rhs().getType();
+  auto resultType = getResult().getType();
   if (lhsType != rhsType)
-    return op.emitOpError() << "arguments type mismatch";
+    return emitOpError() << "arguments type mismatch";
 
   using OP = mlir::metal::BinaryExpOperator;
-  switch (op.binaryOperator()) {
+  switch (binaryOperator()) {
   case OP::addOp:
   case OP::subOp:
   case OP::mulOp:
   case OP::divOp:
   case OP::remOp:
     if (lhsType != resultType)
-      return op.emitOpError() << "result type mismatch";
+      return emitOpError() << "result type mismatch";
     break;
   case OP::eqOp:
   case OP::neOp:
@@ -397,7 +385,7 @@ static mlir::LogicalResult verify(BinaryExpOp op) {
   case OP::andOp:
   case OP::orOp:
     if (!resultType.isInteger(1))
-      return op.emitOpError() << "result type mismatch";
+      return emitOpError() << "result type mismatch";
     break;
   }
   return mlir::success();
@@ -427,39 +415,39 @@ auto IfOp::build(
   }
 }
 
-static mlir::ParseResult parseIfOp(mlir::OpAsmParser &parser,
-                                   mlir::OperationState &result) {
+mlir::ParseResult IfOp::parse(mlir::OpAsmParser &parser,
+                              mlir::OperationState &result) {
   result.regions.reserve(2);
   mlir::Region *thenRegion = result.addRegion();
   mlir::Region *elseRegion = result.addRegion();
 
   auto &builder = parser.getBuilder();
-  mlir::OpAsmParser::OperandType condition;
+  mlir::OpAsmParser::UnresolvedOperand condition;
   mlir::Type i1Type = builder.getIntegerType(1);
   if (parser.parseOperand(condition) ||
       parser.resolveOperand(condition, i1Type, result.operands))
     return mlir::failure();
 
-  if (parser.parseRegion(*thenRegion, llvm::None, llvm::None))
+  if (parser.parseRegion(*thenRegion, llvm::None))
     return mlir::failure();
 
   if (!parser.parseOptionalKeyword("else")) {
-    if (parser.parseRegion(*elseRegion, llvm::None, llvm::None))
+    if (parser.parseRegion(*elseRegion, llvm::None))
       return mlir::failure();
   }
 
   return mlir::success();
 }
 
-static void print(mlir::OpAsmPrinter &printer, IfOp op) {
-  printer << "metal.if " << op.condition();
-  printer.printRegion(op.thenRegion(),
+void IfOp::print(mlir::OpAsmPrinter &printer) {
+  printer << " " << condition() << " ";
+  printer.printRegion(thenRegion(),
                       /*printEntryBlockArgs=*/false,
                       /*printBlockTerminators=*/true);
 
-  auto &elseRegion = op.elseRegion();
+  auto &elseRegion = this->elseRegion();
   if (!elseRegion.empty()) {
-    printer << " else";
+    printer << " else ";
     printer.printRegion(elseRegion,
                         /*printEntryBlockArgs=*/false,
                         /*printBlockTerminators=*/true);
@@ -488,41 +476,41 @@ auto WhileOp::build(
   bodyBuilder(builder, result.location);
 }
 
-static mlir::LogicalResult verify(WhileOp op) {
-  auto &region = op.conditionRegion();
+mlir::LogicalResult WhileOp::verify() {
+  auto &region = conditionRegion();
 
   for (auto it = region.op_begin(); it != region.op_end(); it++) {
     if (!llvm::isa<ConstantOp, StoreOp, GetElementOp, ThreadIdOp, CastOp,
                    UnaryExpOp, BinaryExpOp, YieldWhileOp>(*it))
-      return op.emitOpError()
-             << it->getName() << " op not allowed in the condition region";
+      return emitOpError() << it->getName()
+                           << " op not allowed in the condition region";
   }
 
   return mlir::success();
 }
 
-static mlir::ParseResult parseWhileOp(mlir::OpAsmParser &parser,
-                                      mlir::OperationState &result) {
+mlir::ParseResult WhileOp::parse(mlir::OpAsmParser &parser,
+                                 mlir::OperationState &result) {
   result.regions.reserve(2);
   mlir::Region *conditionRegion = result.addRegion();
   mlir::Region *bodyRegion = result.addRegion();
   if (parser.parseKeyword("condition") ||
-      parser.parseRegion(*conditionRegion, llvm::None, llvm::None) ||
+      parser.parseRegion(*conditionRegion, llvm::None) ||
       parser.parseKeyword("loop") ||
-      parser.parseRegion(*bodyRegion, llvm::None, llvm::None))
+      parser.parseRegion(*bodyRegion, llvm::None))
     return mlir::failure();
 
   return mlir::success();
 }
 
-static void print(mlir::OpAsmPrinter &printer, WhileOp op) {
-  printer << "metal.while condition";
-  printer.printRegion(op.conditionRegion(),
+void WhileOp::print(mlir::OpAsmPrinter &printer) {
+  printer << " condition ";
+  printer.printRegion(conditionRegion(),
                       /*printEntryBlockArgs=*/false,
                       /*printBlockTerminators=*/true);
 
-  auto &bodyRegion = op.bodyRegion();
-  printer << " loop";
+  auto &bodyRegion = this->bodyRegion();
+  printer << " loop ";
   printer.printRegion(bodyRegion,
                       /*printEntryBlockArgs=*/false,
                       /*printBlockTerminators=*/true);
@@ -563,14 +551,14 @@ void BufferGetContentsOp::build(OpBuilder &builder, OperationState &result,
   result.addTypes(memRefType);
 };
 
-static mlir::LogicalResult verify(BufferGetContentsOp op) {
+mlir::LogicalResult BufferGetContentsOp::verify() {
   auto elementType =
-      op.getResult().getType().cast<mlir::MemRefType>().getElementType();
+      getResult().getType().cast<mlir::MemRefType>().getElementType();
   if (elementType.isa<mlir::IntegerType>() || elementType.isF16() ||
       elementType.isF32())
     return mlir::success();
 
-  return op.emitOpError() << "the buffer has an incompatible type";
+  return emitOpError() << "the buffer has an incompatible type";
 }
 
 //===----------------------------------------------------------------------===//
@@ -590,23 +578,22 @@ void CommandQueueMakeCommandBufferOp::build(OpBuilder &builder,
   result.addTypes(builder.getIndexType());
 };
 
-static void print(mlir::OpAsmPrinter &printer,
-                  CommandQueueMakeCommandBufferOp op) {
-  printer << "metal.command_queue_make_command_buffer " << op.functionName()
+void CommandQueueMakeCommandBufferOp::print(mlir::OpAsmPrinter &printer) {
+  printer << " " << functionName()
           << " ";
-  printer << op.commandQueue() << ", ";
-  printer << op.width() << ", ";
-  printer << op.height() << ", ";
-  printer << op.depth();
-  printer << ": (" << op.getOperandTypes() << ") -> ";
-  printer.printType(op.getResult().getType());
+  printer << commandQueue() << ", ";
+  printer << width() << ", ";
+  printer << height() << ", ";
+  printer << depth();
+  printer << ": (" << getOperandTypes() << ") -> ";
+  printer.printType(getResult().getType());
 }
 
-static mlir::ParseResult
-parseCommandQueueMakeCommandBufferOp(mlir::OpAsmParser &parser,
-                                     mlir::OperationState &result) {
+mlir::ParseResult
+CommandQueueMakeCommandBufferOp::parse(mlir::OpAsmParser &parser,
+                                       mlir::OperationState &result) {
   llvm::StringRef functionName;
-  llvm::SmallVector<mlir::OpAsmParser::OperandType, 4> operands;
+  llvm::SmallVector<mlir::OpAsmParser::UnresolvedOperand, 4> operands;
   llvm::SmallVector<mlir::Type, 4> operandTypes;
   if (parser.parseKeyword(&functionName) ||
       parser.parseOperandList(operands, 4) || parser.parseColon() ||
@@ -626,4 +613,4 @@ parseCommandQueueMakeCommandBufferOp(mlir::OpAsmParser &parser,
 //===----------------------------------------------------------------------===//
 
 #define GET_OP_CLASSES
-#include "Metal/Dialect/MetalOps.cpp.inc"
+#include "metal/IR/MetalOps.cpp.inc"

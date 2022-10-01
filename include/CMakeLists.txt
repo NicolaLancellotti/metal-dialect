@@ -1,1 +1,1 @@
-add_subdirectory(Metal)
+add_subdirectory(metal)

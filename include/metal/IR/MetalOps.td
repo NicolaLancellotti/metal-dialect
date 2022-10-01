@@ -10,6 +10,7 @@
 
 include "MetalDialect.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/IR/EnumAttr.td"
 
 def Metal_MemRefType :
 Type<CPred<"$_self.isa<MetalMemRefType>()">, "Metal MemRefType">;
@@ -29,15 +30,14 @@ def ModuleOp : Metal_Op<"module", [
 
   let skipDefaultBuilders = 1;
 
-  let builders = [OpBuilder<"OpBuilder &builder, OperationState &result">];
+  let builders = [OpBuilder<(ins)>];
 
   let extraClassDeclaration = [{
     void insert(Block::iterator insertPt, Operation *op);
     void push_back(Operation *op);
   }];
 
-  let printer = [{ return ::print(p, *this); }];
-  let parser = [{ return parseModuleOp(parser, result); }];
+  let hasCustomAssemblyFormat = 1;
 }
 
 def ModuleEndOp : Metal_Op<"module_end", [
@@ -56,12 +56,11 @@ def KernelOp : Metal_Op<"kernel", [SingleBlockImplicitTerminator<"ReturnOp">,
   let regions = (region SizedRegion<1>:$bodyRegion);
 
   let builders = [
-    OpBuilder<"OpBuilder &b, OperationState &state, StringRef name, "
-              "llvm::SmallVectorImpl<Type> &buffers, "
-              "llvm::SmallVectorImpl<bool> &isAddressSpaceDevice">
+    OpBuilder<(ins "StringRef":$name, "llvm::SmallVectorImpl<Type>&":$buffers,
+                      "llvm::SmallVectorImpl<bool>&":$isAddressSpaceDevice)>
   ];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
   let extraClassDeclaration = [{
     mlir::Block& getEntryBlock();
@@ -69,8 +68,7 @@ def KernelOp : Metal_Op<"kernel", [SingleBlockImplicitTerminator<"ReturnOp">,
     mlir::MutableArrayRef<mlir::BlockArgument> getBuffers();
   }];
 
-  let printer = [{ return ::print(p, *this); }];
-  let parser = [{ return parseKernelOp(parser, result); }];
+  let hasCustomAssemblyFormat = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -90,13 +88,12 @@ def ConstantOp : Metal_Op<"constant", [ConstantLike, NoSideEffect]> {
   let results = (outs Metal_Type);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Attribute value">
+    OpBuilder<(ins "Attribute":$value)>
   ];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
-  let printer = [{ return ::print(p, *this); }];
-  let parser = [{ return ::parseConstantOp(parser, result); }];
+  let hasCustomAssemblyFormat = 1;
 
   let hasFolder = 1;
 }
@@ -109,13 +106,12 @@ def AllocaOp : Metal_Op<"alloca"> {
   let results = (outs Metal_MemRefType);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, "
-              "MetalMemRefType type", [{
-      state.addTypes(type);
+    OpBuilder<(ins "MetalMemRefType":$type), [{
+      $_state.addTypes(type);
     }]>
   ];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
   let assemblyFormat = "attr-dict `:` type(results)";
 }
@@ -127,7 +123,7 @@ def AllocaOp : Metal_Op<"alloca"> {
 def StoreOp : Metal_Op<"store"> {
   let arguments = (ins Metal_Type:$value, Metal_MemRefType:$memref, UI32:$index);
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
   let assemblyFormat = "$value `,` $memref `[` $index `]`  attr-dict `:` type(operands)";
 }
@@ -140,11 +136,9 @@ def GetElementOp : Metal_Op<"get_element", [NoSideEffect]> {
   let arguments = (ins Metal_MemRefType:$memref, UI32:$index);
   let results = (outs Metal_Type:$result);
 
-  let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, Value memref, "
-              "Value index">];
+  let builders = [OpBuilder<(ins "Value":$memref, "Value":$index)>];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
   let assemblyFormat = "$memref `[` $index `]`  attr-dict `:` functional-type(operands, results)";
 }
@@ -157,10 +151,9 @@ def ThreadIdOp : Metal_Op<"thread_id", [NoSideEffect]> {
   let arguments = (ins StrAttr:$dimension);
   let results = (outs UI32);
 
-  let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, StringRef dimension">];
+  let builders = [OpBuilder<(ins "StringRef":$dimension)>];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
   let assemblyFormat = "$dimension attr-dict `:` type(results)";
 }
@@ -174,8 +167,6 @@ def CastOp : Metal_Op<"cast", [NoSideEffect]> {
   let results = (outs Metal_Type);
 
   let assemblyFormat = "$argument  attr-dict `:` functional-type(operands, results)";
-
-  let hasFolder = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -196,11 +187,10 @@ def UnaryExpOp : Metal_Op<"unary_exp", [NoSideEffect]> {
   let results = (outs Metal_Type);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, UnaryExpOperator "
-              "unaryOperator, Value argument">
+    OpBuilder<(ins "UnaryExpOperator":$unaryOperator, "Value":$argument)>
   ];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
   let assemblyFormat = "$argument `,` $unaryOperator attr-dict `:` functional-type(operands, results)";
 
@@ -248,11 +238,10 @@ def BinaryExpOp : Metal_Op<"binary_exp", [NoSideEffect]> {
   let results = (outs Metal_Type);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, "
-              "BinaryExpOperator binaryOperator, Value lhs, Value rhs">
+    OpBuilder<(ins "BinaryExpOperator":$binaryOperator, "Value":$lhs, "Value":$rhs)>
   ];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
   let assemblyFormat = "$lhs `,` $rhs `,` $binaryOperator  attr-dict `:` functional-type(operands, results)";
 }
@@ -275,13 +264,11 @@ def IfOp : Metal_Op<"if", [RecursiveSideEffects, NoRegionArguments]> {
   let regions = (region SizedRegion<1>:$thenRegion, AnyRegion:$elseRegion);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, Value cond, "
-              "function_ref<void(OpBuilder &, Location)> thenBuilder, "
-              "function_ref<void(OpBuilder &, Location)> elseBuilder =  nullptr">
+    OpBuilder<(ins "Value":$cond, "function_ref<void(OpBuilder &, Location)>":$thenBuilder,
+               CArg<"function_ref<void(OpBuilder &, Location)>", "nullptr">:$elseBuilder)>
   ];
 
-  let printer = [{ return ::print(p, *this); }];
-  let parser = [{ return ::parseIfOp(parser, result); }];
+  let hasCustomAssemblyFormat = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -292,15 +279,13 @@ def WhileOp : Metal_Op<"while", [RecursiveSideEffects, NoRegionArguments]> {
   let regions = (region SizedRegion<1>:$conditionRegion, SizedRegion<1>:$bodyRegion);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, "
-              "function_ref<void(OpBuilder &, Location)> conditionBuilder, "
-              "function_ref<void(OpBuilder &, Location)> bodyBuilder">
+    OpBuilder<(ins "function_ref<void(OpBuilder &, Location)>":$conditionBuilder,
+                      "function_ref<void(OpBuilder &, Location)>":$bodyBuilder)>
   ];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
-  let printer = [{ return ::print(p, *this); }];
-  let parser = [{ return ::parseWhileOp(parser, result); }];
+  let hasCustomAssemblyFormat = 1;
 }
 
 def YieldWhileOp : Metal_Op<"while_yield", [NoSideEffect, Terminator,
@@ -328,9 +313,7 @@ def ReleaseOp : Metal_Op<"release"> {
 def DeviceMakeDefaultOp : Metal_Op<"device_make_default"> {
   let results = (outs Index:$device);
 
-  let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result">
-  ];
+  let builders = [OpBuilder<(ins)>];
 
   let assemblyFormat = "attr-dict `:` type(results)";
 }
@@ -340,7 +323,7 @@ def DeviceMakeCommandQueueOp : Metal_Op<"device_make_command_queue"> {
   let results = (outs Index:$commandQueue);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Value device">
+    OpBuilder<(ins "Value":$device)>
   ];
 
   let assemblyFormat = "$device attr-dict `:` functional-type(operands, results)";
@@ -353,8 +336,8 @@ def DeviceMakeBufferOp : Metal_Op<"device_make_buffer"> {
   let results = (outs Index:$bufferOp);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Value device, "
-              "Value isStorageModeManaged, Value count, Value sizeType">
+    OpBuilder<(ins "Value":$device, "Value":$isStorageModeManaged, "Value":$count,
+                      "Value":$sizeType)>
   ];
 
   let assemblyFormat = "$device `,`$isStorageModeManaged `,` $count `,` $sizeType "
@@ -373,11 +356,10 @@ def BufferGetContentsOp : Metal_Op<"buffer_get_contents"> {
   let results = (outs AnyMemRef);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Value device, "
-              "Type elementType">
+    OpBuilder<(ins "Value":$device, "Type":$elementType)>
   ];
 
-  let verifier = [{ return ::verify(*this); }];
+  let hasVerifier = 1;
 
   let assemblyFormat = "$device attr-dict `:` functional-type(operands, results)";
 }
@@ -392,12 +374,11 @@ def CommandQueueMakeCommandBufferOp : Metal_Op<"command_queue_make_command_buffe
   let results = (outs Index);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &result, Value commandQueue, "
-              "StringRef functionName, Value width, Value height, Value depth">
+    OpBuilder<(ins "Value":$commandQueue, "StringRef":$functionName,
+                      "Value":$width, "Value":$height, "Value":$depth)>
   ];
 
-  let printer = [{ return ::print(p, *this); }];
-  let parser = [{ return parseCommandQueueMakeCommandBufferOp(parser, result); }];
+  let hasCustomAssemblyFormat = 1;
 }
 
 //===----------------------------------------------------------------------===//

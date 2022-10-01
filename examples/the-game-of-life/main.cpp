@@ -268,23 +268,20 @@ B6:
   branch B1;
  */
 
-static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
-                                        mlir::Location loc,
-                                        mlir::LLVM::LLVMFuncOp putcharF) {
+static mlir::func::FuncOp createExecuteKernel(mlir::OpBuilder builder,
+                                              mlir::Location loc,
+                                              mlir::LLVM::LLVMFuncOp putcharF) {
   llvm::SmallVector<mlir::Type, 0> arg_types;
   llvm::SmallVector<mlir::Type, 1> result_types{builder.getI32Type()};
 
   // Types
-  auto llvmDialect =
-      builder.getContext()->getRegisteredDialect<mlir::LLVM::LLVMDialect>();
-  auto llvmI32Ty = mlir::LLVM::LLVMType::getInt64Ty(llvmDialect);
   auto i32Ty = builder.getIntegerType(32);
   auto indexTy = builder.getIndexType();
 
   // Function
   auto funcName = "main";
   auto funcType = builder.getFunctionType(arg_types, result_types);
-  auto func = mlir::FuncOp::create(loc, funcName, funcType);
+  auto func = mlir::func::FuncOp::create(loc, funcName, funcType);
 
   // Blocks
   auto &entryBlock = *func.addEntryBlock();
@@ -299,23 +296,21 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
   builder.setInsertionPointToStart(&entryBlock);
 
   // Constants
-  auto i32_m1 = builder.create<mlir::ConstantIntOp>(loc, -1, 32);
-  auto i32_0 = builder.create<mlir::ConstantIntOp>(loc, 0, 32);
-  auto i32_1 = builder.create<mlir::ConstantIntOp>(loc, 1, 32);
-  auto i64_0 = builder.create<mlir::ConstantIntOp>(loc, 0, 64);
-  auto i64_1 = builder.create<mlir::ConstantIntOp>(loc, 1, 64);
-  auto i64_2 = builder.create<mlir::ConstantIntOp>(loc, 2, 64);
-  auto i64_4 = builder.create<mlir::ConstantIntOp>(loc, 4, 64);
-  auto index0 = builder.create<mlir::ConstantIndexOp>(loc, 0);
-  auto index1 = builder.create<mlir::ConstantIndexOp>(loc, 1);
-  auto index2 = builder.create<mlir::ConstantIndexOp>(loc, 2);
-  auto index3 = builder.create<mlir::ConstantIndexOp>(loc, 3);
-  auto newLine = builder.create<mlir::LLVM::ConstantOp>(
-      loc, llvmI32Ty, builder.getI32IntegerAttr(10));
-  auto char1 = builder.create<mlir::LLVM::ConstantOp>(
-      loc, llvmI32Ty, builder.getI32IntegerAttr(49));
-  auto char0 = builder.create<mlir::LLVM::ConstantOp>(
-      loc, llvmI32Ty, builder.getI32IntegerAttr(48));
+  auto i32_m1 = builder.create<mlir::arith::ConstantIntOp>(loc, -1, 32);
+  auto i32_0 = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+  auto i32_1 = builder.create<mlir::arith::ConstantIntOp>(loc, 1, 32);
+  auto i64_0 = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 64);
+  auto i64_1 = builder.create<mlir::arith::ConstantIntOp>(loc, 1, 64);
+  auto i64_2 = builder.create<mlir::arith::ConstantIntOp>(loc, 2, 64);
+  auto i64_4 = builder.create<mlir::arith::ConstantIntOp>(loc, 4, 64);
+  auto index0 = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto index1 = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto index2 = builder.create<mlir::arith::ConstantIndexOp>(loc, 2);
+  auto index3 = builder.create<mlir::arith::ConstantIndexOp>(loc, 3);
+
+  auto newLine = builder.create<mlir::arith::ConstantIntOp>(loc, 10, 32);
+  auto char1 = builder.create<mlir::arith::ConstantIntOp>(loc, 49, 32);
+  auto char0 = builder.create<mlir::arith::ConstantIntOp>(loc, 48, 32);
 
 #ifdef littleMatrix
   auto row = 5;
@@ -323,11 +318,11 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
   auto row = 100000000;
 #endif
   auto col = 5;
-  auto i32_row = builder.create<mlir::ConstantIntOp>(loc, row, 32);
-  auto i32_columns = builder.create<mlir::ConstantIntOp>(loc, col, 32);
-  auto i64_row = builder.create<mlir::ConstantIntOp>(loc, row, 64);
-  auto i64_columns = builder.create<mlir::ConstantIntOp>(loc, col, 64);
-  auto count = builder.create<mlir::ConstantIntOp>(loc, row * col, 64);
+  auto i32_row = builder.create<mlir::arith::ConstantIntOp>(loc, row, 32);
+  auto i32_columns = builder.create<mlir::arith::ConstantIntOp>(loc, col, 32);
+  auto i64_row = builder.create<mlir::arith::ConstantIntOp>(loc, row, 64);
+  auto i64_columns = builder.create<mlir::arith::ConstantIntOp>(loc, col, 64);
+  auto count = builder.create<mlir::arith::ConstantIntOp>(loc, row * col, 64);
 
   // Device
   auto device = builder.create<mlir::metal::DeviceMakeDefaultOp>(loc);
@@ -338,7 +333,7 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
 
   // Buffers
   auto isStorageModeManaged =
-      builder.create<mlir::ConstantOp>(loc, builder.getBoolAttr(false));
+      builder.create<mlir::arith::ConstantOp>(loc, builder.getBoolAttr(false));
   auto buffer0 = builder.create<mlir::metal::DeviceMakeBufferOp>(
       loc, device, isStorageModeManaged, count, i64_4);
   auto buffer1 = builder.create<mlir::metal::DeviceMakeBufferOp>(
@@ -355,20 +350,24 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
   {
     auto memRef =
         builder.create<mlir::metal::BufferGetContentsOp>(loc, buffer0, i32Ty);
-    builder.create<mlir::StoreOp>(loc, i32_1, memRef, mlir::ValueRange{index0});
-    builder.create<mlir::StoreOp>(loc, i32_1, memRef, mlir::ValueRange{index1});
-    builder.create<mlir::StoreOp>(loc, i32_1, memRef, mlir::ValueRange{index2});
-    builder.create<mlir::StoreOp>(loc, i32_1, memRef, mlir::ValueRange{index3});
+    builder.create<mlir::memref::StoreOp>(loc, i32_1, memRef,
+                                          mlir::ValueRange{index0});
+    builder.create<mlir::memref::StoreOp>(loc, i32_1, memRef,
+                                          mlir::ValueRange{index1});
+    builder.create<mlir::memref::StoreOp>(loc, i32_1, memRef,
+                                          mlir::ValueRange{index2});
+    builder.create<mlir::memref::StoreOp>(loc, i32_1, memRef,
+                                          mlir::ValueRange{index3});
   }
 
   // Fill buffer 1
   {
     auto memRef =
         builder.create<mlir::metal::BufferGetContentsOp>(loc, buffer1, i32Ty);
-    builder.create<mlir::StoreOp>(loc, i32_row, memRef,
-                                  mlir::ValueRange{index0});
-    builder.create<mlir::StoreOp>(loc, i32_columns, memRef,
-                                  mlir::ValueRange{index1});
+    builder.create<mlir::memref::StoreOp>(loc, i32_row, memRef,
+                                          mlir::ValueRange{index0});
+    builder.create<mlir::memref::StoreOp>(loc, i32_columns, memRef,
+                                          mlir::ValueRange{index1});
   }
 
   // Get buffer 2
@@ -393,24 +392,24 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
 #ifdef printMatrix
   {
     mlir::MemRefType memref = mlir::MemRefType::get({}, i32Ty);
-    auto i = builder.create<mlir::AllocaOp>(loc, memref);
-    auto j = builder.create<mlir::AllocaOp>(loc, memref);
-    builder.create<mlir::StoreOp>(loc, i32_m1, i);
-    builder.create<mlir::BranchOp>(loc, external_condition);
+    auto i = builder.create<mlir::memref::AllocaOp>(loc, memref);
+    auto j = builder.create<mlir::memref::AllocaOp>(loc, memref);
+    builder.create<mlir::memref::StoreOp>(loc, i32_m1, i);
+    builder.create<mlir::cf::BranchOp>(loc, external_condition);
     {
       // external_condition
       builder.setInsertionPointToStart(external_condition);
-      builder.create<mlir::StoreOp>(
+      builder.create<mlir::memref::StoreOp>(
           loc,
-          builder.create<mlir::AddIOp>(
-              loc, builder.create<mlir::LoadOp>(loc, i), i32_1),
+          builder.create<mlir::arith::AddIOp>(
+              loc, builder.create<mlir::memref::LoadOp>(loc, i), i32_1),
           i);
-      auto value = builder.create<mlir::CmpIOp>(
-          loc, mlir::CmpIPredicate::slt, builder.create<mlir::LoadOp>(loc, i),
-          i32_row);
-      builder.create<mlir::CondBranchOp>(loc, value, external_loop,
-                                         mlir::ValueRange{}, external_end,
-                                         mlir::ValueRange{});
+      auto value = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::slt,
+          builder.create<mlir::memref::LoadOp>(loc, i), i32_row);
+      builder.create<mlir::cf::CondBranchOp>(loc, value, external_loop,
+                                             mlir::ValueRange{}, external_end,
+                                             mlir::ValueRange{});
     }
     {
       // external_end
@@ -422,54 +421,55 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
       builder.create<mlir::metal::ReleaseOp>(loc, buffer2);
       builder.create<mlir::metal::ReleaseOp>(loc, commandQueue);
       builder.create<mlir::metal::ReleaseOp>(loc, commandBuffer);
-      builder.create<mlir::ReturnOp>(loc, mlir::ValueRange{i32_0});
+      builder.create<mlir::func::ReturnOp>(loc, mlir::ValueRange{i32_0});
     }
     {
       // external_loop
       builder.setInsertionPointToStart(external_loop);
-      builder.create<mlir::StoreOp>(loc, i32_m1, j);
-      builder.create<mlir::BranchOp>(loc, internal_condition);
+      builder.create<mlir::memref::StoreOp>(loc, i32_m1, j);
+      builder.create<mlir::cf::BranchOp>(loc, internal_condition);
     }
     {
       // internal_condition
       builder.setInsertionPointToStart(internal_condition);
-      builder.create<mlir::StoreOp>(
+      builder.create<mlir::memref::StoreOp>(
           loc,
-          builder.create<mlir::AddIOp>(
-              loc, builder.create<mlir::LoadOp>(loc, j), i32_1),
+          builder.create<mlir::arith::AddIOp>(
+              loc, builder.create<mlir::memref::LoadOp>(loc, j), i32_1),
           j);
-      auto value = builder.create<mlir::CmpIOp>(
-          loc, mlir::CmpIPredicate::slt, builder.create<mlir::LoadOp>(loc, j),
-          i32_columns);
-      builder.create<mlir::CondBranchOp>(
+      auto value = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::slt,
+          builder.create<mlir::memref::LoadOp>(loc, j), i32_columns);
+      builder.create<mlir::cf::CondBranchOp>(
           loc, value, internal_loop, llvm::ArrayRef<mlir::Value>(),
           internal_end, llvm::ArrayRef<mlir::Value>());
     }
     {
       // internal_loop
       builder.setInsertionPointToStart(internal_loop);
-      auto product = builder.create<mlir::MulIOp>(
-          loc, builder.create<mlir::LoadOp>(loc, i), i32_columns);
-      auto indexInt = builder.create<mlir::AddIOp>(
-          loc, product, builder.create<mlir::LoadOp>(loc, j));
-      auto index = builder.create<mlir::IndexCastOp>(loc, indexInt, indexTy);
-      auto value = builder.create<mlir::LoadOp>(loc, buffer_result,
-                                                mlir::ValueRange{index});
-      auto llvmValue = builder.create<mlir::SelectOp>(
+      auto product = builder.create<mlir::arith::MulIOp>(
+          loc, builder.create<mlir::memref::LoadOp>(loc, i), i32_columns);
+      auto indexInt = builder.create<mlir::arith::AddIOp>(
+          loc, product, builder.create<mlir::memref::LoadOp>(loc, j));
+      auto index =
+          builder.create<mlir::arith::IndexCastOp>(loc, indexTy, indexInt);
+      auto value = builder.create<mlir::memref::LoadOp>(
+          loc, buffer_result, mlir::ValueRange{index});
+      auto llvmValue = builder.create<mlir::arith::SelectOp>(
           loc,
-          builder.create<mlir::CmpIOp>(loc, mlir::CmpIPredicate::eq, value,
-                                       i32_1),
+          builder.create<mlir::arith::CmpIOp>(
+              loc, mlir::arith::CmpIPredicate::eq, value, i32_1),
           char1, char0);
       builder.create<mlir::LLVM::CallOp>(loc, putcharF,
                                          mlir::ValueRange{llvmValue});
-      builder.create<mlir::BranchOp>(loc, internal_condition);
+      builder.create<mlir::cf::BranchOp>(loc, internal_condition);
     }
     {
       // internal_end
       builder.setInsertionPointToStart(internal_end);
       builder.create<mlir::LLVM::CallOp>(loc, putcharF,
                                          mlir::ValueRange{newLine});
-      builder.create<mlir::BranchOp>(loc, external_condition);
+      builder.create<mlir::cf::BranchOp>(loc, external_condition);
     }
   }
 #else
@@ -479,7 +479,7 @@ static mlir::FuncOp createExecuteKernel(mlir::OpBuilder builder,
   builder.create<mlir::metal::ReleaseOp>(loc, buffer2);
   builder.create<mlir::metal::ReleaseOp>(loc, commandQueue);
   builder.create<mlir::metal::ReleaseOp>(loc, commandBuffer);
-  builder.create<mlir::ReturnOp>(loc, mlir::ValueRange{i32_0});
+  builder.create<mlir::func::ReturnOp>(loc, mlir::ValueRange{i32_0});
 #endif
 
   return func;

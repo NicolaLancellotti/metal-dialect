@@ -17,7 +17,7 @@ include "mlir/IR/OpBase.td"
 def Metal_Dialect : Dialect {
     let name = "metal";
     let summary = "Metal MLIR dialect.";
-    let cppNamespace = "metal";
+    let cppNamespace = "::mlir::metal";
 
     let extraClassDeclaration = [{
       Operation *materializeConstant(OpBuilder &builder, Attribute value,
@@ -28,13 +28,15 @@ def Metal_Dialect : Dialect {
       void printType(mlir::Type type,
                      mlir::DialectAsmPrinter &printer) const override;
     }];
+
+//    let emitAccessorPrefix = kEmitAccessorPrefix_Prefixed; // TODONICOLA
 }
 
 //===----------------------------------------------------------------------===//
 // Base metal operation definition.
 //===----------------------------------------------------------------------===//
 
-class Metal_Op<string mnemonic, list<OpTrait> traits = []> :
+class Metal_Op<string mnemonic, list<Trait> traits = []> :
         Op<Metal_Dialect, mnemonic, traits>;
 
 #endif // METAL_DIALECT

@@ -1,23 +1,23 @@
-#include "Metal/Conversion/MetalToLLVM.h"
-#include "Metal/Dialect/MetalDialect.h"
-#include "Metal/Dialect/MetalMemRefType.h"
-#include "Metal/Dialect/MetalOps.h"
-#include "Metal/Target/MetalShadingLanguage.h"
+#include "metal/Conversion/MetalToLLVM.h"
+#include "metal/IR/MetalDialect.h"
+#include "metal/IR/MetalOps.h"
+#include "metal/Target/MetalShadingLanguage.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Dialect.h"
-#include "mlir/IR/Function.h"
-#include "mlir/IR/Module.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Target/LLVMIR.h"
+#include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/Transforms/Passes.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/Host.h"
-#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 
 #ifndef METAL_DRIVER_H
@@ -26,14 +26,19 @@
 class Driver {
 public:
   Driver() {
-    mlir::registerDialect<mlir::metal::MetalDialect>();
-    mlir::registerDialect<mlir::StandardOpsDialect>();
-    mlir::registerDialect<mlir::LLVM::LLVMDialect>();
     this->_context = std::make_unique<mlir::MLIRContext>();
+    this->_context->getOrLoadDialect<mlir::arith::ArithmeticDialect>();
+    this->_context->getOrLoadDialect<mlir::cf::ControlFlowDialect>();
+    this->_context->getOrLoadDialect<mlir::func::FuncDialect>();
+    this->_context->getOrLoadDialect<mlir::LLVM::LLVMDialect>();
+    this->_context->getOrLoadDialect<mlir::memref::MemRefDialect>();
+    this->_context->getOrLoadDialect<mlir::metal::MetalDialect>();
+    this->_llvmContext = std::make_unique<llvm::LLVMContext>();
     this->_pm = std::make_unique<mlir::PassManager>(&*_context);
     this->_builder = std::make_unique<mlir::OpBuilder>(&*_context);
-    this->_loc = std::make_unique<mlir::Location>(_builder->getFileLineColLoc(
-        mlir::Identifier::get("0", _builder->getContext()), 0, 0));
+
+    this->_loc = std::make_unique<mlir::Location>(
+        mlir::FileLineColLoc::get(_builder->getStringAttr("0"), 0, 0));
 
     this->_module = std::make_unique<mlir::ModuleOp>(
         mlir::ModuleOp::create(_builder->getUnknownLoc()));
@@ -98,11 +103,12 @@ public:
   }
 
   void translateToLLVM() {
-    _pm->addPass(mlir::createLowerMetalToLLVMPass());
+    _pm->addPass(mlir::metal::createConvertMetalToLLVMPass());
     if (mlir::failed(_pm->run(*_module)))
       exit(EXIT_FAILURE);
 
-    auto llvmModule = mlir::translateModuleToLLVMIR(*_module);
+    auto llvmModule =
+        mlir::translateModuleToLLVMIR(*_module, *this->_llvmContext);
     if (!llvmModule)
       exit(EXIT_FAILURE);
 
@@ -111,11 +117,8 @@ public:
   }
 
   mlir::LLVM::LLVMFuncOp insertPutchar() {
-    auto llvmDialect =
-        _builder->getContext()->getRegisteredDialect<mlir::LLVM::LLVMDialect>();
-    auto llvmI32Ty = mlir::LLVM::LLVMType::getInt64Ty(llvmDialect);
-    auto llvmFnType = mlir::LLVM::LLVMType::getFunctionTy(llvmI32Ty, llvmI32Ty,
-                                                          /*isVarArg=*/false);
+    auto i32Ty = this->_builder->getI32Type();
+    auto llvmFnType = mlir::LLVM::LLVMFunctionType::get(i32Ty, i32Ty, false);
 
     mlir::OpBuilder::InsertionGuard insertGuard(*_builder);
     this->_builder->setInsertionPointToStart(_module->getBody());
@@ -125,6 +128,7 @@ public:
 
 private:
   std::unique_ptr<mlir::MLIRContext> _context;
+  std::unique_ptr<llvm::LLVMContext> _llvmContext;
   std::unique_ptr<mlir::PassManager> _pm;
   std::unique_ptr<mlir::metal::ModuleOp> _metalModule;
   std::unique_ptr<mlir::ModuleOp> _module;
@@ -156,7 +160,7 @@ private:
     llvmModule->setDataLayout(targetMachine->createDataLayout());
 
     std::error_code ec;
-    llvm::raw_fd_ostream dest(outputFilePath, ec, llvm::sys::fs::F_None);
+    llvm::raw_fd_ostream dest(outputFilePath, ec, llvm::sys::fs::OF_None);
     if (ec) {
       llvm::errs() << "Could not open file: " << ec.message();
       exit(EXIT_FAILURE);

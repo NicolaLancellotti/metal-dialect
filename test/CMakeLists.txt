@@ -17,4 +17,4 @@ add_lit_testsuite(check-metal "Running the metal regression tests"
         )
 set_target_properties(check-metal PROPERTIES FOLDER "Tests")
 
-add_lit_testsuites(METAL ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${METAL_TEST_DEPENDS})
+add_lit_testsuites(metal ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${METAL_TEST_DEPENDS})

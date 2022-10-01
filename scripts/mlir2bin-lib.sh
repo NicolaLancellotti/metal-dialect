@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-llc_bin="llvm-install/bin/llc"
+llc_bin="llvm-project/build/bin/llc"
 metal_translate="build/bin/metal-translate"
 metal_opt="build/bin/metal-opt"
 runtime_file="build/bin/runtime/Build/Products/Release/libMetalRuntime.a"
@@ -20,7 +20,7 @@ $metal_translate $1 --mlir-to-msl 1> $metal_file &&
 xcrun -sdk macosx metal $metal_file -o $metal_lib &&
 
 # mlir to mlir-llvm
-$metal_opt $1 -lower-metal-to-llvm 1> $mlir_llvm_file &&
+$metal_opt $1 --convert-metal-to-llvm 1> $mlir_llvm_file &&
 
 # mlir-llvm to llvm
 $metal_translate $mlir_llvm_file --mlir-to-llvmir 1> $llvm_file  &&

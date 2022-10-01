@@ -13,14 +13,15 @@
 namespace mlir {
 
 class MLIRContext;
-class OwningRewritePatternList;
+class RewritePatternSet;
 class Pass;
 
-void populateMetalToLLVMConversionPatterns(OwningRewritePatternList &patterns,
+namespace metal {
+void populateMetalToLLVMConversionPatterns(RewritePatternSet &patterns,
                                            MLIRContext *ctx);
 
-std::unique_ptr<mlir::Pass> createLowerMetalToLLVMPass();
-
+std::unique_ptr<mlir::Pass> createConvertMetalToLLVMPass();
+} // end namespace metal
 } // end namespace mlir
 
 #endif // METAL_METALTOLLVM_H

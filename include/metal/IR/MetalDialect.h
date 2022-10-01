@@ -10,12 +10,6 @@
 
 #include "mlir/IR/Dialect.h"
 
-namespace mlir {
-namespace metal {
-
-#include "Metal/Dialect/MetalOpsDialect.h.inc"
-
-} // end namespace metal
-} // end namespace mlir
+#include "metal/IR/MetalOpsDialect.h.inc"
 
 #endif // METAL_METALDIALECT_H

@@ -7,13 +7,10 @@ target_link_libraries(examplesExpressions
         MLIRIR
         MLIRParser
         MLIRPass
-        MLIRTranslation
-        MLIRSPIRV
-        MLIRStandardToLLVM
-        MLIRSCFToStandard
+        MLIRTranslateLib
+        MLIRSPIRVDialect
         MLIRSupport
         LLVMSupport
         MLIRMetal
         examplesUtility
 )
-

@@ -5,9 +5,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Metal/Target/ModuleTranslation.h"
-#include "Metal/Dialect/MetalOps.h"
-#include "mlir/IR/StandardTypes.h"
+#include "metal/Target/ModuleTranslation.h"
+#include "metal/IR/MetalOps.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/raw_ostream.h"
 

@@ -1,13 +1,12 @@
 METAL_BUILD_DIR = ./build
 LLVM_BUILD_DIR = ./llvm-project/build
-LLVM_INSTALL_DIR = ./llvm-install
 MLIR_2_BIN_LIB = ./scripts/mlir2bin-lib.sh
 EXAMPLES = ./examples/mlir
 EXAMPLE_BUILD_DIR = $(METAL_BUILD_DIR)/bin/examples
 JOBS = $(shell sysctl -n hw.logicalcpu)
 
 all:	generate_llvm_project \
-		install_llvm \
+		build_llvm \
 		generate_metal_project \
 		build_metal \
 		build_metal_runtime \
@@ -16,7 +15,6 @@ all:	generate_llvm_project \
 clean:
 	@echo "Clean"
 	@rm -rdf $(LLVM_BUILD_DIR)
-	@rm -rdf $(LLVM_INSTALL_DIR)
 	@rm -rdf $(METAL_BUILD_DIR)
 
 generate_llvm_project:
@@ -24,26 +22,23 @@ generate_llvm_project:
 	@mkdir -p $(LLVM_BUILD_DIR)
 	@cmake -G Ninja -S ./llvm-project/llvm -B $(LLVM_BUILD_DIR) \
 		-DLLVM_ENABLE_PROJECTS=mlir \
-		-DLLVM_TARGETS_TO_BUILD="X86" \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DLLVM_ENABLE_ASSERTIONS=ON \
-		-DLLVM_INSTALL_UTILS=ON \
 		-DLLVM_ENABLE_RTTI=ON \
 		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++ \
-		-DCMAKE_INSTALL_PREFIX=$(LLVM_INSTALL_DIR)
+		-DCMAKE_CXX_COMPILER=clang++
 
-install_llvm:
-	@echo "Install LLVM"
-	@mkdir -p $(LLVM_INSTALL_DIR)
-	@cmake --build $(LLVM_BUILD_DIR) --target install -- -j$(JOBS)
+build_llvm:
+	@echo "build LLVM"
+	@cmake --build $(LLVM_BUILD_DIR) -- -j$(JOBS)
 
 generate_metal_project:
 	@echo "Generate Metal Project"
 	@mkdir -p $(METAL_BUILD_DIR)
 	@cmake -G Ninja -S . -B $(METAL_BUILD_DIR) \
-		-DMLIR_DIR=$(LLVM_INSTALL_DIR)/lib/cmake/mlir \
+		-DMLIR_DIR=$(LLVM_BUILD_DIR)/lib/cmake/mlir \
 		-DLLVM_EXTERNAL_LIT=$(CURDIR)/$(LLVM_BUILD_DIR)/bin/llvm-lit \
+		-DCMAKE_BUILD_TYPE=Debug \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++
 
