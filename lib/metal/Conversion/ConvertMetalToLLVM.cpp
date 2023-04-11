@@ -6,7 +6,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "metal/Conversion/MetalToLLVM.h"
-#include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
@@ -33,7 +33,7 @@ struct ConvertMetalToLLVM : public ConvertMetalToLLVMBase<ConvertMetalToLLVM> {
     populateFuncToLLVMConversionPatterns(typeConverter, patterns);
     populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
     cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
-    mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
+    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter,
                                                             patterns);
     mlir::metal::populateMetalToLLVMConversionPatterns(patterns, &getContext());
 

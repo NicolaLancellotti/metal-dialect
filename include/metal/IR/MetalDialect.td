@@ -18,6 +18,7 @@ def Metal_Dialect : Dialect {
     let name = "metal";
     let summary = "Metal MLIR dialect.";
     let cppNamespace = "::mlir::metal";
+    let useFoldAPI = kEmitFoldAdaptorFolder;
 
     let extraClassDeclaration = [{
       Operation *materializeConstant(OpBuilder &builder, Attribute value,
@@ -28,8 +29,6 @@ def Metal_Dialect : Dialect {
       void printType(mlir::Type type,
                      mlir::DialectAsmPrinter &printer) const override;
     }];
-
-//    let emitAccessorPrefix = kEmitAccessorPrefix_Prefixed; // TODONICOLA
 }
 
 //===----------------------------------------------------------------------===//

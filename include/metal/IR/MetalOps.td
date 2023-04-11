@@ -11,6 +11,7 @@
 include "MetalDialect.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/EnumAttr.td"
+include "mlir/IR/BuiltinAttributeInterfaces.td"
 
 def Metal_MemRefType :
 Type<CPred<"$_self.isa<MetalMemRefType>()">, "Metal MemRefType">;
@@ -31,11 +32,6 @@ def ModuleOp : Metal_Op<"module", [
   let skipDefaultBuilders = 1;
 
   let builders = [OpBuilder<(ins)>];
-
-  let extraClassDeclaration = [{
-    void insert(Block::iterator insertPt, Operation *op);
-    void push_back(Operation *op);
-  }];
 
   let hasCustomAssemblyFormat = 1;
 }
@@ -75,7 +71,7 @@ def KernelOp : Metal_Op<"kernel", [SingleBlockImplicitTerminator<"ReturnOp">,
 // ReturnOp
 //===----------------------------------------------------------------------===//
 
-def ReturnOp : Metal_Op<"return", [NoSideEffect, Terminator]> {
+def ReturnOp : Metal_Op<"return", [Pure, Terminator]> {
   let assemblyFormat = "attr-dict";
 }
 
@@ -83,19 +79,19 @@ def ReturnOp : Metal_Op<"return", [NoSideEffect, Terminator]> {
 // ConstantOp
 //===----------------------------------------------------------------------===//
 
-def ConstantOp : Metal_Op<"constant", [ConstantLike, NoSideEffect]> {
-  let arguments = (ins AnyAttr:$value);
-  let results = (outs Metal_Type);
+def ConstantOp : Metal_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["value", "result"]>,]> {
+  let arguments = (ins TypedAttrInterface:$value);
+  let results = (outs Metal_Type:$result);
 
   let builders = [
-    OpBuilder<(ins "Attribute":$value)>
+    OpBuilder<(ins "TypedAttr":$attr)>
   ];
-
-  let hasVerifier = 1;
 
   let hasCustomAssemblyFormat = 1;
 
   let hasFolder = 1;
+
+  let assemblyFormat = "attr-dict $value";
 }
 
 //===----------------------------------------------------------------------===//
@@ -132,7 +128,7 @@ def StoreOp : Metal_Op<"store"> {
 // GetElementOp
 //===----------------------------------------------------------------------===//
 
-def GetElementOp : Metal_Op<"get_element", [NoSideEffect]> {
+def GetElementOp : Metal_Op<"get_element", [Pure]> {
   let arguments = (ins Metal_MemRefType:$memref, UI32:$index);
   let results = (outs Metal_Type:$result);
 
@@ -147,7 +143,7 @@ def GetElementOp : Metal_Op<"get_element", [NoSideEffect]> {
 // ThreadIdOp
 //===----------------------------------------------------------------------===//
 
-def ThreadIdOp : Metal_Op<"thread_id", [NoSideEffect]> {
+def ThreadIdOp : Metal_Op<"thread_id", [Pure]> {
   let arguments = (ins StrAttr:$dimension);
   let results = (outs UI32);
 
@@ -162,7 +158,7 @@ def ThreadIdOp : Metal_Op<"thread_id", [NoSideEffect]> {
 // CastOp
 //===----------------------------------------------------------------------===//
 
-def CastOp : Metal_Op<"cast", [NoSideEffect]> {
+def CastOp : Metal_Op<"cast", [Pure]> {
   let arguments = (ins Metal_Type:$argument);
   let results = (outs Metal_Type);
 
@@ -182,7 +178,7 @@ def UnaryExpOperator : I64EnumAttr<
   let cppNamespace = "mlir::metal";
 }
 
-def UnaryExpOp : Metal_Op<"unary_exp", [NoSideEffect]> {
+def UnaryExpOp : Metal_Op<"unary_exp", [Pure]> {
   let arguments = (ins UnaryExpOperator:$unaryOperator, Metal_Type:$argument);
   let results = (outs Metal_Type);
 
@@ -233,7 +229,7 @@ def BinaryExpOperator : I64EnumAttr<
   let cppNamespace = "mlir::metal";
 }
 
-def BinaryExpOp : Metal_Op<"binary_exp", [NoSideEffect]> {
+def BinaryExpOp : Metal_Op<"binary_exp", [Pure]> {
   let arguments = (ins BinaryExpOperator:$binaryOperator, Metal_Type:$lhs, Metal_Type:$rhs);
   let results = (outs Metal_Type);
 
@@ -250,7 +246,7 @@ def BinaryExpOp : Metal_Op<"binary_exp", [NoSideEffect]> {
 // YieldOp
 //===----------------------------------------------------------------------===//
 
-def YieldOp : Metal_Op<"yield", [NoSideEffect, Terminator]> {
+def YieldOp : Metal_Op<"yield", [Pure, Terminator]> {
   let assemblyFormat = "attr-dict";
 }
 
@@ -258,7 +254,7 @@ def YieldOp : Metal_Op<"yield", [NoSideEffect, Terminator]> {
 // IfOp
 //===----------------------------------------------------------------------===//
 
-def IfOp : Metal_Op<"if", [RecursiveSideEffects, NoRegionArguments]> {
+def IfOp : Metal_Op<"if", [RecursiveMemoryEffects, NoRegionArguments]> {
   let arguments = (ins I1:$condition);
 
   let regions = (region SizedRegion<1>:$thenRegion, AnyRegion:$elseRegion);
@@ -275,7 +271,7 @@ def IfOp : Metal_Op<"if", [RecursiveSideEffects, NoRegionArguments]> {
 // WhileOp
 //===----------------------------------------------------------------------===//
 
-def WhileOp : Metal_Op<"while", [RecursiveSideEffects, NoRegionArguments]> {
+def WhileOp : Metal_Op<"while", [RecursiveMemoryEffects, NoRegionArguments]> {
   let regions = (region SizedRegion<1>:$conditionRegion, SizedRegion<1>:$bodyRegion);
 
   let builders = [
@@ -288,7 +284,7 @@ def WhileOp : Metal_Op<"while", [RecursiveSideEffects, NoRegionArguments]> {
   let hasCustomAssemblyFormat = 1;
 }
 
-def YieldWhileOp : Metal_Op<"while_yield", [NoSideEffect, Terminator,
+def YieldWhileOp : Metal_Op<"while_yield", [Pure, Terminator,
                                             HasParent<"WhileOp">]> {
   let arguments = (ins I1:$condition);
 

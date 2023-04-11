@@ -391,7 +391,7 @@ static mlir::func::FuncOp createExecuteKernel(mlir::OpBuilder builder,
 
 #ifdef printMatrix
   {
-    mlir::MemRefType memref = mlir::MemRefType::get({}, i32Ty);
+    mlir::MemRefType memref = mlir::MemRefType::get(std::nullopt, i32Ty);
     auto i = builder.create<mlir::memref::AllocaOp>(loc, memref);
     auto j = builder.create<mlir::memref::AllocaOp>(loc, memref);
     builder.create<mlir::memref::StoreOp>(loc, i32_m1, i);
@@ -402,11 +402,11 @@ static mlir::func::FuncOp createExecuteKernel(mlir::OpBuilder builder,
       builder.create<mlir::memref::StoreOp>(
           loc,
           builder.create<mlir::arith::AddIOp>(
-              loc, builder.create<mlir::memref::LoadOp>(loc, i), i32_1),
+              loc, builder.create<mlir::memref::LoadOp>(loc, i, std::nullopt), i32_1),
           i);
       auto value = builder.create<mlir::arith::CmpIOp>(
           loc, mlir::arith::CmpIPredicate::slt,
-          builder.create<mlir::memref::LoadOp>(loc, i), i32_row);
+          builder.create<mlir::memref::LoadOp>(loc, i, std::nullopt), i32_row);
       builder.create<mlir::cf::CondBranchOp>(loc, value, external_loop,
                                              mlir::ValueRange{}, external_end,
                                              mlir::ValueRange{});
@@ -435,11 +435,11 @@ static mlir::func::FuncOp createExecuteKernel(mlir::OpBuilder builder,
       builder.create<mlir::memref::StoreOp>(
           loc,
           builder.create<mlir::arith::AddIOp>(
-              loc, builder.create<mlir::memref::LoadOp>(loc, j), i32_1),
+              loc, builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt), i32_1),
           j);
       auto value = builder.create<mlir::arith::CmpIOp>(
           loc, mlir::arith::CmpIPredicate::slt,
-          builder.create<mlir::memref::LoadOp>(loc, j), i32_columns);
+          builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt), i32_columns);
       builder.create<mlir::cf::CondBranchOp>(
           loc, value, internal_loop, llvm::ArrayRef<mlir::Value>(),
           internal_end, llvm::ArrayRef<mlir::Value>());
@@ -448,9 +448,9 @@ static mlir::func::FuncOp createExecuteKernel(mlir::OpBuilder builder,
       // internal_loop
       builder.setInsertionPointToStart(internal_loop);
       auto product = builder.create<mlir::arith::MulIOp>(
-          loc, builder.create<mlir::memref::LoadOp>(loc, i), i32_columns);
+          loc, builder.create<mlir::memref::LoadOp>(loc, i, std::nullopt), i32_columns);
       auto indexInt = builder.create<mlir::arith::AddIOp>(
-          loc, product, builder.create<mlir::memref::LoadOp>(loc, j));
+          loc, product, builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt));
       auto index =
           builder.create<mlir::arith::IndexCastOp>(loc, indexTy, indexInt);
       auto value = builder.create<mlir::memref::LoadOp>(

@@ -2,7 +2,7 @@
 #include "metal/IR/MetalDialect.h"
 #include "metal/IR/MetalOps.h"
 #include "metal/Target/MetalShadingLanguage.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -27,7 +27,7 @@ class Driver {
 public:
   Driver() {
     this->_context = std::make_unique<mlir::MLIRContext>();
-    this->_context->getOrLoadDialect<mlir::arith::ArithmeticDialect>();
+    this->_context->getOrLoadDialect<mlir::arith::ArithDialect>();
     this->_context->getOrLoadDialect<mlir::cf::ControlFlowDialect>();
     this->_context->getOrLoadDialect<mlir::func::FuncDialect>();
     this->_context->getOrLoadDialect<mlir::LLVM::LLVMDialect>();

@@ -1,6 +1,8 @@
 METAL_BUILD_DIR = ./build
 LLVM_BUILD_DIR = ./llvm-project/build
+RUNTIME_BUILD_DIR = ./MetalRuntime/.build
 MLIR_2_BIN_LIB = ./scripts/mlir2bin-lib.sh
+RUNTIME = ./MetalRuntime
 EXAMPLES = ./examples/mlir
 EXAMPLE_BUILD_DIR = $(METAL_BUILD_DIR)/bin/examples
 JOBS = $(shell sysctl -n hw.logicalcpu)
@@ -16,6 +18,7 @@ clean:
 	@echo "Clean"
 	@rm -rdf $(LLVM_BUILD_DIR)
 	@rm -rdf $(METAL_BUILD_DIR)
+	@rm -rdf $(RUNTIME_BUILD_DIR)
 
 generate_llvm_project:
 	@echo "Generate LLVM Project"
@@ -49,12 +52,17 @@ build_metal:
 
 build_metal_runtime:
 	@echo "Build Metal Runtime"
-	@xcodebuild -project ./runtime/MetalRuntime/MetalRuntime.xcodeproj \
-		-scheme MetalRuntime -derivedDataPath ./build/bin/runtime
+	cd $(RUNTIME) && swift build -c release
 
-build_examples:	build_life5x5_print \
+build_examples:	build_metal_runtime_example \
+				build_life5x5_print \
 				build_life5x5 \
 				build_life100000000x5
+
+build_metal_runtime_example:
+	@echo "Build Metal Runtime"
+	@xcodebuild -project ./examples/MetalRuntimeExample/MetalRuntimeExample.xcodeproj \
+		-scheme MetalRuntimeExample
 
 build_life5x5_print:
 	@echo "Build life5x5_print"
@@ -77,12 +85,12 @@ run_examples:	run_life5x5_print \
 
 run_life5x5_print:
 	@echo "Run life5x5_print"
-	cd $(EXAMPLE_BUILD_DIR)/life5x5_print && ./life5x5_print.out
+	cd $(EXAMPLE_BUILD_DIR)/life5x5_print && ./life5x5_print
 
 run_life5x5:
 	@echo "Run life5x5"
-	cd $(EXAMPLE_BUILD_DIR)/life5x5 && ./life5x5.out
+	cd $(EXAMPLE_BUILD_DIR)/life5x5 && ./life5x5
 
 run_life100000000x5:
 	@echo "Run life100000000x5"
-	cd $(EXAMPLE_BUILD_DIR)/life100000000x5 && ./life100000000x5.out
+	cd $(EXAMPLE_BUILD_DIR)/life100000000x5 && ./life100000000x5

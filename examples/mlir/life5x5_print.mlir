@@ -154,19 +154,19 @@ module {
     metal.command_buffer_add_buffer %5, %4, %c2_i64 : (index, index, i64) -> ()
     metal.command_buffer_commit %5 : index
     metal.command_buffer_wait_until_completed %5 : index
-    %9 = memref.alloca() : memref<i32>
-    %10 = memref.alloca() : memref<i32>
-    memref.store %c-1_i32, %9[] : memref<i32>
+    %alloca = memref.alloca() : memref<i32>
+    %alloca_2 = memref.alloca() : memref<i32>
+    memref.store %c-1_i32, %alloca[] : memref<i32>
     cf.br ^bb1
   ^bb1:  // 2 preds: ^bb0, ^bb6
-    %11 = memref.load %9[] : memref<i32>
-    %12 = arith.addi %11, %c1_i32 : i32
-    memref.store %12, %9[] : memref<i32>
-    %13 = memref.load %9[] : memref<i32>
-    %14 = arith.cmpi slt, %13, %c5_i32 : i32
-    cf.cond_br %14, ^bb2, ^bb3
+    %9 = memref.load %alloca[] : memref<i32>
+    %10 = arith.addi %9, %c1_i32 : i32
+    memref.store %10, %alloca[] : memref<i32>
+    %11 = memref.load %alloca[] : memref<i32>
+    %12 = arith.cmpi slt, %11, %c5_i32 : i32
+    cf.cond_br %12, ^bb2, ^bb3
   ^bb2:  // pred: ^bb1
-    memref.store %c-1_i32, %10[] : memref<i32>
+    memref.store %c-1_i32, %alloca_2[] : memref<i32>
     cf.br ^bb4
   ^bb3:  // pred: ^bb1
     metal.release %0 : index
@@ -177,25 +177,25 @@ module {
     metal.release %5 : index
     return %c0_i32 : i32
   ^bb4:  // 2 preds: ^bb2, ^bb5
-    %15 = memref.load %10[] : memref<i32>
-    %16 = arith.addi %15, %c1_i32 : i32
-    memref.store %16, %10[] : memref<i32>
-    %17 = memref.load %10[] : memref<i32>
-    %18 = arith.cmpi slt, %17, %c5_i32_0 : i32
-    cf.cond_br %18, ^bb5, ^bb6
+    %13 = memref.load %alloca_2[] : memref<i32>
+    %14 = arith.addi %13, %c1_i32 : i32
+    memref.store %14, %alloca_2[] : memref<i32>
+    %15 = memref.load %alloca_2[] : memref<i32>
+    %16 = arith.cmpi slt, %15, %c5_i32_0 : i32
+    cf.cond_br %16, ^bb5, ^bb6
   ^bb5:  // pred: ^bb4
-    %19 = memref.load %9[] : memref<i32>
-    %20 = arith.muli %19, %c5_i32_0 : i32
-    %21 = memref.load %10[] : memref<i32>
-    %22 = arith.addi %20, %21 : i32
-    %23 = arith.index_cast %22 : i32 to index
-    %24 = memref.load %8[%23] : memref<?xi32>
-    %25 = arith.cmpi eq, %24, %c1_i32 : i32
-    %26 = arith.select %25, %c49_i32, %c48_i32 : i32
-    %27 = llvm.call @putchar(%26) : (i32) -> i32
+    %17 = memref.load %alloca[] : memref<i32>
+    %18 = arith.muli %17, %c5_i32_0 : i32
+    %19 = memref.load %alloca_2[] : memref<i32>
+    %20 = arith.addi %18, %19 : i32
+    %21 = arith.index_cast %20 : i32 to index
+    %22 = memref.load %8[%21] : memref<?xi32>
+    %23 = arith.cmpi eq, %22, %c1_i32 : i32
+    %24 = arith.select %23, %c49_i32, %c48_i32 : i32
+    %25 = llvm.call @putchar(%24) : (i32) -> i32
     cf.br ^bb4
   ^bb6:  // pred: ^bb4
-    %28 = llvm.call @putchar(%c10_i32) : (i32) -> i32
+    %26 = llvm.call @putchar(%c10_i32) : (i32) -> i32
     cf.br ^bb1
   }
 }

@@ -7,7 +7,7 @@
 
 #include "metal/Conversion/MetalToLLVM.h"
 #include "metal/IR/MetalOps.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -66,9 +66,9 @@ static void rewriteOp(Operation *op, ArrayRef<Value> operands,
   if (module.lookupSymbol<LLVMFuncOp>(functionName))
     callee = SymbolRefAttr::get(context, functionName);
   else {
-    if (resultType.hasValue()) {
+    if (resultType.has_value()) {
       auto llvmFnType =
-          LLVM::LLVMFunctionType::get(resultType.getValue(), params, false);
+          LLVM::LLVMFunctionType::get(resultType.value(), params, false);
       callee = insertFunction(rewriter, module, llvmFnType, functionName);
     } else {
       auto llvmVoidTy = LLVM::LLVMVoidType::get(context);
@@ -76,12 +76,12 @@ static void rewriteOp(Operation *op, ArrayRef<Value> operands,
       callee = insertFunction(rewriter, module, llvmFnType, functionName);
     }
   }
-  if (resultType.hasValue()) {
+  if (resultType.has_value()) {
     auto call = rewriter.create<func::CallOp>(loc, callee,
-                                              resultType.getValue(), operands);
+                                              resultType.value(), operands);
     rewriter.replaceOp(op, call.getResult(0));
   } else {
-    rewriter.create<func::CallOp>(loc, callee, llvm::None, operands);
+    rewriter.create<func::CallOp>(loc, callee, std::nullopt, operands);
     rewriter.eraseOp(op);
   }
 }
@@ -109,7 +109,7 @@ public:
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
                   ConversionPatternRewriter &rewriter) const final {
     auto i64Ty = rewriter.getI64Type();
-    rewriteOp(op, operands, rewriter, "_MetalRelease", llvm::None, {i64Ty});
+    rewriteOp(op, operands, rewriter, "_MetalRelease", std::nullopt, {i64Ty});
     return success();
   }
 };
@@ -196,7 +196,7 @@ public:
         rewriter.create<mlir::LLVM::AllocaOp>(loc, structPtrTy, one, 0);
 
     ArrayRef<Value> newOperand = {operands[0], alloca};
-    rewriter.create<func::CallOp>(loc, callee, llvm::None, newOperand);
+    rewriter.create<func::CallOp>(loc, callee, std::nullopt, newOperand);
     rewriter.replaceOpWithNewOp<mlir::LLVM::LoadOp>(op, alloca);
     return success();
   }
@@ -222,8 +222,8 @@ public:
 
     auto createOp = cast<mlir::metal::CommandQueueMakeCommandBufferOp>(op);
     auto kernel =
-        getOrCreateGlobalString(loc, rewriter, createOp.functionName(),
-                                createOp.functionName(), module);
+        getOrCreateGlobalString(loc, rewriter, createOp.getFunctionName(),
+                                createOp.getFunctionName(), module);
 
     ArrayRef<Value> newOperands = {operands[0], lib,         kernel,
                                    operands[1], operands[2], operands[3]};
@@ -245,7 +245,7 @@ public:
                   ConversionPatternRewriter &rewriter) const final {
     auto i64Ty = rewriter.getI64Type();
     rewriteOp(op, operands, rewriter, "_MetalCommandBufferAddBuffer",
-              llvm::None, {i64Ty, i64Ty, i64Ty});
+              std::nullopt, {i64Ty, i64Ty, i64Ty});
     return success();
   }
 };
@@ -260,7 +260,7 @@ public:
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
                   ConversionPatternRewriter &rewriter) const final {
     auto i64Ty = rewriter.getI64Type();
-    rewriteOp(op, operands, rewriter, "_MetalCommandBufferCommit", llvm::None,
+    rewriteOp(op, operands, rewriter, "_MetalCommandBufferCommit", std::nullopt,
               {i64Ty});
     return success();
   }
@@ -277,7 +277,7 @@ public:
                   ConversionPatternRewriter &rewriter) const final {
     auto i64Ty = rewriter.getI64Type();
     rewriteOp(op, operands, rewriter, "_MetalCommandBufferWaitUntilCompleted",
-              llvm::None, {i64Ty});
+              std::nullopt, {i64Ty});
     return success();
   }
 };

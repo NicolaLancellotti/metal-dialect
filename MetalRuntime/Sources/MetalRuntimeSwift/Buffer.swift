@@ -1,7 +1,7 @@
 import Metal
 
 @objc
-class Buffer: Wrappable {
+public class Buffer: Wrappable {
   let buffer: MTLBuffer
   public let count: Int
   
@@ -11,12 +11,12 @@ class Buffer: Wrappable {
   }
   
   @objc
-  func contents() -> UnsafeMutableRawPointer {
+  public func contents() -> UnsafeMutableRawPointer {
     return self.buffer.contents()
   }
   
   @objc
-  func getCount() -> Int {
+  public func getCount() -> Int {
     return count
   }
 }

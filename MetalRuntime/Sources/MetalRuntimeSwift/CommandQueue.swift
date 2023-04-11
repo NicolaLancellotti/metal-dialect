@@ -1,18 +1,17 @@
 import Metal
 
 @objc
-class CommandQueue: Wrappable {
+public class CommandQueue: Wrappable {
   private let device: MTLDevice
   private let commandQueue: MTLCommandQueue
   
-  @objc
   init(device: MTLDevice, commandQueue: MTLCommandQueue) {
     self.device = device
     self.commandQueue = commandQueue
   }
   
   @objc
-  func makeCommandBuffer(libPath: String,
+  public func makeCommandBuffer(libPath: String,
                          functionName: String,
                          width: Int,
                          height: Int,

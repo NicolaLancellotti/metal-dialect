@@ -1,5 +1,6 @@
 #include "MetalRuntime.h"
-#import <MetalRuntime-Swift.h>
+@import Foundation;
+@import MetalRuntimeSwift;
 
 // _____________________________________________________________________________
 // Release

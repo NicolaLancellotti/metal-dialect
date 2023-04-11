@@ -87,8 +87,8 @@ void ModuleTranslation::translateKernels() {
 }
 
 void ModuleTranslation::translateKernel(mlir::metal::KernelOp op) {
-  _output << "kernel void " << op.name() << "(\n";
-  for (auto tuple : llvm::zip(op.getBuffers(), op.address_space_device())) {
+  _output << "kernel void " << op.getName() << "(\n";
+  for (auto tuple : llvm::zip(op.getBuffers(), op.getAddressSpaceDevice())) {
     auto buffer = std::get<0>(tuple);
     auto memRef = buffer.getType().cast<mlir::metal::MetalMemRefType>();
     auto stringType = typeToString(memRef.getType());
@@ -101,11 +101,11 @@ void ModuleTranslation::translateKernel(mlir::metal::KernelOp op) {
   }
   _output << "  uint3 id [[thread_position_in_grid]])\n";
 
-  auto firstBlock = op.bodyRegion().getBlocks().begin();
+  auto firstBlock = op.getBodyRegion().getBlocks().begin();
   for (auto &it : llvm::enumerate(firstBlock->getArguments()))
     _buffers[it.value().getAsOpaquePointer()] = it.index();
 
-  translate(op.bodyRegion());
+  translate(op.getBodyRegion());
 }
 
 void ModuleTranslation::printDelim() {
@@ -159,22 +159,22 @@ void ModuleTranslation::translate(mlir::metal::AllocaOp op) {
 }
 
 void ModuleTranslation::translate(mlir::metal::StoreOp op) {
-  translateVarName(op.memref());
+  translateVarName(op.getMemref());
   _output << "[";
-  translateValue(op.index().getDefiningOp());
+  translateValue(op.getIndex().getDefiningOp());
   _output << "] = ";
-  translateValue(op.value().getDefiningOp());
+  translateValue(op.getValue().getDefiningOp());
   printDelim();
 }
 
 void ModuleTranslation::translate(IfOp op) {
   _output << "if (";
-  translateValue(op.condition().getDefiningOp());
+  translateValue(op.getCondition().getDefiningOp());
   _output << ") ";
 
-  translate(op.thenRegion());
+  translate(op.getThenRegion());
 
-  auto &elseRegion = op.elseRegion();
+  auto &elseRegion = op.getElseRegion();
   if (elseRegion.getBlocks().size()) {
     _output << " else ";
     translate(elseRegion);
@@ -184,7 +184,7 @@ void ModuleTranslation::translate(IfOp op) {
 void ModuleTranslation::translate(WhileOp op) {
   _output << "while (";
 
-  auto &conditionRegion = op.conditionRegion();
+  auto &conditionRegion = op.getConditionRegion();
   {
     inWhileCondition = true;
     for (auto &op : conditionRegion.getOps()) {
@@ -199,7 +199,7 @@ void ModuleTranslation::translate(WhileOp op) {
   translateValue(conditionOp);
   _output << ") ";
 
-  auto &bodyRegion = op.bodyRegion();
+  auto &bodyRegion = op.getBodyRegion();
   translate(bodyRegion);
 }
 
@@ -232,38 +232,38 @@ void ModuleTranslation::translateValue(Operation *opInst) {
 }
 
 void ModuleTranslation::translate(mlir::metal::ConstantOp op) {
-  if (auto v = op.value().dyn_cast<BoolAttr>())
+  if (auto v = op.getValue().dyn_cast<BoolAttr>())
     _output << (v.getValue() ? "true" : "false");
-  else if (auto v = op.value().dyn_cast<IntegerAttr>())
+  else if (auto v = op.getValue().dyn_cast<IntegerAttr>())
     _output << v.getValue();
-  else if (auto v = op.value().dyn_cast<FloatAttr>())
+  else if (auto v = op.getValue().dyn_cast<FloatAttr>())
     _output << v.getValueAsDouble();
   else
     llvm_unreachable("Unexpected constant");
 }
 
 void ModuleTranslation::translate(mlir::metal::GetElementOp op) {
-  translateVarName(op.memref());
+  translateVarName(op.getMemref());
   _output << "[";
-  translateValue(op.index().getDefiningOp());
+  translateValue(op.getIndex().getDefiningOp());
   _output << "]";
 }
 
 void ModuleTranslation::translate(mlir::metal::ThreadIdOp op) {
-  _output << "id." << op.dimension();
+  _output << "id." << op.getDimension();
 }
 
 void ModuleTranslation::translate(mlir::metal::CastOp op) {
   _output << typeToString(op.getType());
   _output << "(";
-  translateValue(op.argument().getDefiningOp());
+  translateValue(op.getArgument().getDefiningOp());
   _output << ")";
 }
 
 void ModuleTranslation::translate(mlir::metal::UnaryExpOp op) {
   _output << "(";
   using OP = mlir::metal::UnaryExpOperator;
-  switch (op.unaryOperator()) {
+  switch (op.getUnaryOperator()) {
   case OP::minusOp:
     _output << "-";
     break;
@@ -271,17 +271,17 @@ void ModuleTranslation::translate(mlir::metal::UnaryExpOp op) {
     _output << "!";
     break;
   }
-  translateValue(op.argument().getDefiningOp());
+  translateValue(op.getArgument().getDefiningOp());
   _output << ") ";
 }
 
 void ModuleTranslation::translate(mlir::metal::BinaryExpOp op) {
   _output << "(";
-  translateValue(op.lhs().getDefiningOp());
+  translateValue(op.getLhs().getDefiningOp());
   _output << ") ";
 
   using OP = mlir::metal::BinaryExpOperator;
-  switch (op.binaryOperator()) {
+  switch (op.getBinaryOperator()) {
   case OP::addOp:
     _output << "+";
     break;
@@ -324,10 +324,10 @@ void ModuleTranslation::translate(mlir::metal::BinaryExpOp op) {
   }
 
   _output << " (";
-  translateValue(op.rhs().getDefiningOp());
+  translateValue(op.getRhs().getDefiningOp());
   _output << ")";
 }
 
 void ModuleTranslation::translate(mlir::metal::YieldWhileOp op) {
-  translateValue(op.condition().getDefiningOp());
+  translateValue(op.getCondition().getDefiningOp());
 }

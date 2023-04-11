@@ -27,7 +27,7 @@ mlir::Operation *MetalDialect::materializeConstant(mlir::OpBuilder &builder,
                                                    mlir::Attribute value,
                                                    mlir::Type type,
                                                    mlir::Location loc) {
-  return builder.create<mlir::metal::ConstantOp>(loc, value);
+  return builder.create<mlir::metal::ConstantOp>(loc, type, value);
 }
 
 mlir::Type MetalDialect::parseType(mlir::DialectAsmParser &parser) const {

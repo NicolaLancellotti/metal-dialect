@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   mlir::registerMetalConversionPasses();
 
   mlir::DialectRegistry registry;
-  registry.insert<mlir::arith::ArithmeticDialect, mlir::func::FuncDialect,
+  registry.insert<mlir::arith::ArithDialect, mlir::func::FuncDialect,
                   mlir::LLVM::LLVMDialect, mlir::memref::MemRefDialect,
                   mlir::metal::MetalDialect>();
   // Add the following to include *all* MLIR Core dialects, or selectively

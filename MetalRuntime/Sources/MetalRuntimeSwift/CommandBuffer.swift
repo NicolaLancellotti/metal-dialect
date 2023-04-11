@@ -1,7 +1,7 @@
 import Metal
 
 @objc
-class CommandBuffer: Wrappable {
+public class CommandBuffer: Wrappable {
   private let device: MTLDevice
   private let commandBuffer: MTLCommandBuffer
   private var computeEncoder: MTLComputeCommandEncoder
@@ -9,7 +9,6 @@ class CommandBuffer: Wrappable {
   private let gridSize: MTLSize
   private let threads: MTLSize
   
-  @objc
   init(device: MTLDevice,
        commandBuffer: MTLCommandBuffer,
        computeEncoder: MTLComputeCommandEncoder,
@@ -24,13 +23,13 @@ class CommandBuffer: Wrappable {
   }
   
   @objc
-  func addBuffer(buffer: Buffer, index: Int) {
+  public func addBuffer(buffer: Buffer, index: Int) {
     self.buffers.append(buffer.buffer)
     self.computeEncoder.setBuffer(buffer.buffer, offset: 0, index: index)
   }
   
   @objc
-  func commit() {
+  public func commit() {
     self.computeEncoder.dispatchThreads(gridSize,
                                         threadsPerThreadgroup: threads)
     self.computeEncoder.endEncoding()
@@ -50,7 +49,7 @@ class CommandBuffer: Wrappable {
   }
   
   @objc
-  func waitUntilCompleted() {
+  public func waitUntilCompleted() {
     self.commandBuffer.waitUntilCompleted()
   }
   

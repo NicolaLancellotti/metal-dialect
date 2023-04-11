@@ -22,17 +22,6 @@ void ModuleOp::build(OpBuilder &builder, OperationState &result) {
   ensureTerminator(*result.addRegion(), builder, result.location);
 }
 
-void ModuleOp::insert(Block::iterator insertPt, Operation *op) {
-  auto *body = getBody();
-  if (insertPt == body->end())
-    insertPt = Block::iterator(body->getTerminator());
-  body->getOperations().insert(insertPt, op);
-}
-
-void ModuleOp::push_back(Operation *op) {
-  insert(Block::iterator(getBody()->getTerminator()), op);
-}
-
 void ModuleOp::print(mlir::OpAsmPrinter &printer) {
   printer << " ";
   printer.printRegion(getRegion(),
@@ -43,7 +32,7 @@ void ModuleOp::print(mlir::OpAsmPrinter &printer) {
 mlir::ParseResult ModuleOp::parse(mlir::OpAsmParser &parser,
                                   mlir::OperationState &result) {
   mlir::Region *body = result.addRegion();
-  if (parser.parseRegion(*body, llvm::None))
+  if (parser.parseRegion(*body, std::nullopt))
     return mlir::failure();
   ModuleOp::ensureTerminator(*body, parser.getBuilder(), result.location);
   return mlir::success();
@@ -56,7 +45,7 @@ mlir::ParseResult ModuleOp::parse(mlir::OpAsmParser &parser,
 void KernelOp::build(OpBuilder &builder, OperationState &result, StringRef name,
                      llvm::SmallVectorImpl<Type> &buffers,
                      llvm::SmallVectorImpl<bool> &isAddressSpaceDevice) {
-  result.addTypes(llvm::None);
+  result.addTypes(std::nullopt);
   result.addAttribute("name", builder.getStringAttr(name));
   result.addAttribute("address_space_device",
                       builder.getBoolArrayAttr(isAddressSpaceDevice));
@@ -104,17 +93,17 @@ mlir::LogicalResult KernelOp::verify() {
 }
 
 mlir::Value KernelOp::getBuffer(uint32_t index) {
-  return bodyRegion().getBlocks().begin()->getArgument(index);
+  return getBodyRegion().getBlocks().begin()->getArgument(index);
 }
 
 mlir::MutableArrayRef<mlir::BlockArgument> KernelOp::getBuffers() {
-  return bodyRegion().getBlocks().begin()->getArguments();
+  return getBodyRegion().getBlocks().begin()->getArguments();
 }
 
 void KernelOp::print(mlir::OpAsmPrinter &printer) {
-  printer << " " << name();
+  printer << " " << getName();
   printer << " address_space_device ";
-  printer.printAttribute(address_space_device());
+  printer.printAttribute(getAddressSpaceDevice());
   printer << " ";
   printer.printRegion(getRegion(),
                       /*printEntryBlockArgs=*/true,
@@ -129,7 +118,7 @@ mlir::ParseResult KernelOp::parse(mlir::OpAsmParser &parser,
   if (parser.parseKeyword(&name) ||
       parser.parseKeyword("address_space_device") ||
       parser.parseAttribute(value, "address_space_device", result.attributes) ||
-      parser.parseRegion(*body, llvm::None))
+      parser.parseRegion(*body, std::nullopt))
     return mlir::failure();
 
   result.addAttribute("name", parser.getBuilder().getStringAttr(name));
@@ -141,39 +130,12 @@ mlir::ParseResult KernelOp::parse(mlir::OpAsmParser &parser,
 //===----------------------------------------------------------------------===//
 
 void ConstantOp::build(OpBuilder &builder, OperationState &state,
-                       Attribute value) {
-  state.addAttribute("value", value);
-  state.addTypes(value.getType());
+                       TypedAttr attr) {
+  ConstantOp::build(builder, state, attr.getType(), attr);
 }
 
-mlir::LogicalResult ConstantOp::verify() {
-  auto value = this->value();
-  auto type = getType();
-
-  if (value.getType() != type)
-    return emitOpError() << "requires attribute's type (" << value.getType()
-                         << ") to match op's return type (" << type << ")";
-  return mlir::success();
-}
-
-mlir::ParseResult ConstantOp::parse(mlir::OpAsmParser &parser,
-                                    mlir::OperationState &result) {
-  mlir::Attribute value;
-  if (parser.parseAttribute(value, "value", result.attributes))
-    return mlir::failure();
-
-  result.addTypes(value.getType());
-  return mlir::success();
-}
-
-void ConstantOp::print(mlir::OpAsmPrinter &printer) {
-  printer << " ";
-  printer.printOptionalAttrDict((*this)->getAttrs(), {"value"});
-  printer << value();
-}
-
-mlir::OpFoldResult ConstantOp::fold(ArrayRef<Attribute> operands) {
-  return valueAttr();
+mlir::OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) {
+  return getValueAttr();
 }
 
 //===----------------------------------------------------------------------===//
@@ -194,7 +156,7 @@ mlir::LogicalResult AllocaOp::verify() {
 static mlir::LogicalResult
 checkIndex(mlir::Operation *op, MetalMemRefType memRef, mlir::Value index) {
   if (auto constantOp = index.getDefiningOp<ConstantOp>()) {
-    auto attr = constantOp.value().dyn_cast<mlir::IntegerAttr>();
+    auto attr = constantOp.getValue().dyn_cast<mlir::IntegerAttr>();
     uint64_t index = attr.getUInt();
     uint32_t size = memRef.getSize();
     if (size > 0 && index >= size)
@@ -210,14 +172,13 @@ checkIndex(mlir::Operation *op, MetalMemRefType memRef, mlir::Value index) {
 //===----------------------------------------------------------------------===//
 
 mlir::LogicalResult StoreOp::verify() {
-  auto memRef = memref().getType().dyn_cast<MetalMemRefType>();
-  auto valueType = value().getType();
+  auto memRef = getMemref().getType().dyn_cast<MetalMemRefType>();
+  auto valueType = getValue().getType();
   auto memRefType = memRef.getType();
   if (memRefType != valueType)
     return emitOpError() << "requires value's type (" << valueType
                          << ") to match memref type (" << memRefType << ")";
-
-  return checkIndex(*this, memRef, index());
+  return checkIndex(*this, memRef, getIndex());
 }
 
 //===----------------------------------------------------------------------===//
@@ -233,14 +194,14 @@ void GetElementOp::build(OpBuilder &builder, OperationState &result,
 };
 
 mlir::LogicalResult GetElementOp::verify() {
-  auto memRef = memref().getType().dyn_cast<MetalMemRefType>();
-  auto resultType = result().getType();
+  auto memRef = getMemref().getType().dyn_cast<MetalMemRefType>();
+  auto resultType = getResult().getType();
   auto memRefType = memRef.getType();
   if (memRefType != resultType)
     return emitOpError() << "requires memref type (" << memRefType
                          << ") to match return type (" << resultType << ")";
 
-  return checkIndex(*this, memRef, index());
+  return checkIndex(*this, memRef, getIndex());
 }
 
 //===----------------------------------------------------------------------===//
@@ -258,7 +219,7 @@ void ThreadIdOp::build(OpBuilder &builder, OperationState &result,
 //===----------------------------------------------------------------------===//
 
 mlir::LogicalResult ThreadIdOp::verify() {
-  auto dim = dimension();
+  auto dim = getDimension();
   if (dim != "x" && dim != "y" && dim != "z")
     return emitOpError() << "requires dimension to be `x` or `y` or `z`, "
                          << "found `" << dim << "`";
@@ -285,7 +246,7 @@ mlir::LogicalResult UnaryExpOp::verify() {
     return emitOpError() << "result type mismatch";
 
   using OP = mlir::metal::UnaryExpOperator;
-  switch (unaryOperator()) {
+  switch (getUnaryOperator()) {
   case OP::notOp:
     if (!argType.isInteger(1))
       return emitOpError() << "argument type must be i1";
@@ -299,20 +260,20 @@ mlir::LogicalResult UnaryExpOp::verify() {
   return mlir::success();
 }
 
-mlir::OpFoldResult UnaryExpOp::fold(ArrayRef<Attribute> operands) {
-  auto constant = dyn_cast<mlir::metal::ConstantOp>(argument().getDefiningOp());
+mlir::OpFoldResult UnaryExpOp::fold(FoldAdaptor adaptor) {
+  auto constant = dyn_cast<mlir::metal::ConstantOp>(getArgument().getDefiningOp());
   if (!constant)
     return nullptr;
 
   mlir::OpBuilder builder{constant.getContext()};
 
-  switch (unaryOperator()) {
+  switch (getUnaryOperator()) {
   case mlir::metal::UnaryExpOperator::notOp: {
-    auto value = constant.valueAttr().dyn_cast<mlir::BoolAttr>().getValue();
+    auto value = constant.getValueAttr().dyn_cast<mlir::BoolAttr>().getValue();
     return builder.getBoolAttr(!value);
   }
   case mlir::metal::UnaryExpOperator::minusOp: {
-    auto attr = constant.valueAttr();
+    auto attr = constant.getValueAttr();
     if (auto intAttr = attr.dyn_cast<mlir::IntegerAttr>()) {
       return builder.getIntegerAttr(attr.getType(), -intAttr.getSInt());
     }
@@ -360,14 +321,14 @@ void BinaryExpOp::build(OpBuilder &builder, OperationState &result,
 }
 
 mlir::LogicalResult BinaryExpOp::verify() {
-  auto lhsType = lhs().getType();
-  auto rhsType = rhs().getType();
+  auto lhsType = getLhs().getType();
+  auto rhsType = getRhs().getType();
   auto resultType = getResult().getType();
   if (lhsType != rhsType)
     return emitOpError() << "arguments type mismatch";
 
   using OP = mlir::metal::BinaryExpOperator;
-  switch (binaryOperator()) {
+  switch (getBinaryOperator()) {
   case OP::addOp:
   case OP::subOp:
   case OP::mulOp:
@@ -399,7 +360,7 @@ auto IfOp::build(
     mlir::OpBuilder &builder, mlir::OperationState &result, mlir::Value cond,
     function_ref<void(mlir::OpBuilder &, mlir::Location)> thenBuilder,
     function_ref<void(OpBuilder &, mlir::Location)> elseBuilder) -> void {
-  result.addTypes(llvm::None);
+  result.addTypes(std::nullopt);
   result.addOperands(cond);
 
   OpBuilder::InsertionGuard guard(builder);
@@ -428,11 +389,11 @@ mlir::ParseResult IfOp::parse(mlir::OpAsmParser &parser,
       parser.resolveOperand(condition, i1Type, result.operands))
     return mlir::failure();
 
-  if (parser.parseRegion(*thenRegion, llvm::None))
+  if (parser.parseRegion(*thenRegion, std::nullopt))
     return mlir::failure();
 
   if (!parser.parseOptionalKeyword("else")) {
-    if (parser.parseRegion(*elseRegion, llvm::None))
+    if (parser.parseRegion(*elseRegion, std::nullopt))
       return mlir::failure();
   }
 
@@ -440,12 +401,12 @@ mlir::ParseResult IfOp::parse(mlir::OpAsmParser &parser,
 }
 
 void IfOp::print(mlir::OpAsmPrinter &printer) {
-  printer << " " << condition() << " ";
-  printer.printRegion(thenRegion(),
+  printer << " " << getCondition() << " ";
+  printer.printRegion(getThenRegion(),
                       /*printEntryBlockArgs=*/false,
                       /*printBlockTerminators=*/true);
 
-  auto &elseRegion = this->elseRegion();
+  auto &elseRegion = this->getElseRegion();
   if (!elseRegion.empty()) {
     printer << " else ";
     printer.printRegion(elseRegion,
@@ -462,8 +423,8 @@ auto WhileOp::build(
     mlir::OpBuilder &builder, mlir::OperationState &result,
     function_ref<void(mlir::OpBuilder &, mlir::Location)> conditionBuilder,
     function_ref<void(mlir::OpBuilder &, mlir::Location)> bodyBuilder) -> void {
-  result.addTypes(llvm::None);
-  result.addOperands(llvm::None);
+  result.addTypes(std::nullopt);
+  result.addOperands(std::nullopt);
 
   OpBuilder::InsertionGuard guard(builder);
 
@@ -477,7 +438,7 @@ auto WhileOp::build(
 }
 
 mlir::LogicalResult WhileOp::verify() {
-  auto &region = conditionRegion();
+  auto &region = getConditionRegion();
 
   for (auto it = region.op_begin(); it != region.op_end(); it++) {
     if (!llvm::isa<ConstantOp, StoreOp, GetElementOp, ThreadIdOp, CastOp,
@@ -495,9 +456,9 @@ mlir::ParseResult WhileOp::parse(mlir::OpAsmParser &parser,
   mlir::Region *conditionRegion = result.addRegion();
   mlir::Region *bodyRegion = result.addRegion();
   if (parser.parseKeyword("condition") ||
-      parser.parseRegion(*conditionRegion, llvm::None) ||
+      parser.parseRegion(*conditionRegion, std::nullopt) ||
       parser.parseKeyword("loop") ||
-      parser.parseRegion(*bodyRegion, llvm::None))
+      parser.parseRegion(*bodyRegion, std::nullopt))
     return mlir::failure();
 
   return mlir::success();
@@ -505,11 +466,11 @@ mlir::ParseResult WhileOp::parse(mlir::OpAsmParser &parser,
 
 void WhileOp::print(mlir::OpAsmPrinter &printer) {
   printer << " condition ";
-  printer.printRegion(conditionRegion(),
+  printer.printRegion(getConditionRegion(),
                       /*printEntryBlockArgs=*/false,
                       /*printBlockTerminators=*/true);
 
-  auto &bodyRegion = this->bodyRegion();
+  auto &bodyRegion = this->getBodyRegion();
   printer << " loop ";
   printer.printRegion(bodyRegion,
                       /*printEntryBlockArgs=*/false,
@@ -547,7 +508,8 @@ void DeviceMakeBufferOp::build(OpBuilder &builder, OperationState &result,
 void BufferGetContentsOp::build(OpBuilder &builder, OperationState &result,
                                 Value device, Type elementType) {
   result.addOperands(device);
-  auto memRefType = mlir::MemRefType::get({-1}, elementType);
+  auto memRefType =
+      mlir::MemRefType::get({mlir::ShapedType::kDynamic}, elementType);
   result.addTypes(memRefType);
 };
 
@@ -579,12 +541,12 @@ void CommandQueueMakeCommandBufferOp::build(OpBuilder &builder,
 };
 
 void CommandQueueMakeCommandBufferOp::print(mlir::OpAsmPrinter &printer) {
-  printer << " " << functionName()
+  printer << " " << getFunctionName()
           << " ";
-  printer << commandQueue() << ", ";
-  printer << width() << ", ";
-  printer << height() << ", ";
-  printer << depth();
+  printer << getCommandQueue() << ", ";
+  printer << getWidth() << ", ";
+  printer << getHeight() << ", ";
+  printer << getDepth();
   printer << ": (" << getOperandTypes() << ") -> ";
   printer.printType(getResult().getType());
 }

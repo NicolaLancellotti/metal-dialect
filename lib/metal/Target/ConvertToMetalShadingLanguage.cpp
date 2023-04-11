@@ -8,7 +8,7 @@
 #include "metal/IR/MetalDialect.h"
 #include "metal/Target/MetalShadingLanguage.h"
 #include "metal/Target/ModuleTranslation.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -25,12 +25,12 @@ mlir::metal::translateModuleToMetalShadingLanguage(mlir::ModuleOp m,
 namespace mlir {
 void registerToMSLTranslation() {
   TranslateFromMLIRRegistration registration(
-      "mlir-to-msl",
+      "mlir-to-msl", "translate from mlir to msl",
       [](ModuleOp module, raw_ostream &output) {
         return ModuleTranslation::translateModule(module, output);
       },
       [](DialectRegistry &registry) {
-        registry.insert<arith::ArithmeticDialect, func::FuncDialect,
+        registry.insert<arith::ArithDialect, func::FuncDialect,
                         LLVM::LLVMDialect, metal::MetalDialect,
                         mlir::memref::MemRefDialect>();
       });
