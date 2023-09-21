@@ -10,14 +10,11 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
-
-using namespace mlir;
 
 namespace {
 
+using namespace mlir;
 using namespace LLVM;
 
 static SymbolRefAttr insertFunction(ConversionPatternRewriter &rewriter,
@@ -57,7 +54,7 @@ static Value getOrCreateGlobalString(Location loc, OpBuilder &builder,
 static void rewriteOp(Operation *op, ArrayRef<Value> operands,
                       ConversionPatternRewriter &rewriter,
                       llvm::StringRef functionName,
-                      llvm::Optional<Type> resultType, ArrayRef<Type> params) {
+                      std::optional<Type> resultType, ArrayRef<Type> params) {
   auto loc = op->getLoc();
   auto module = op->getParentOfType<ModuleOp>();
   auto *context = module.getContext();
@@ -77,8 +74,8 @@ static void rewriteOp(Operation *op, ArrayRef<Value> operands,
     }
   }
   if (resultType.has_value()) {
-    auto call = rewriter.create<func::CallOp>(loc, callee,
-                                              resultType.value(), operands);
+    auto call = rewriter.create<func::CallOp>(loc, callee, resultType.value(),
+                                              operands);
     rewriter.replaceOp(op, call.getResult(0));
   } else {
     rewriter.create<func::CallOp>(loc, callee, std::nullopt, operands);
@@ -174,11 +171,11 @@ public:
     auto functionName = "_MetalBufferGetContents";
 
     auto voidTy = LLVM::LLVMVoidType::get(context);
-    auto i32PtrTy = LLVM::LLVMPointerType::get(rewriter.getI32Type());
+    auto ptrTy = LLVM::LLVMPointerType::get(rewriter.getContext());
     auto i64Ty = rewriter.getI64Type();
     auto arrayTy = LLVM::LLVMArrayType::get(i64Ty, 1);
     auto structTy = LLVM::LLVMStructType::getLiteral(
-        context, {i32PtrTy, i32PtrTy, i64Ty, arrayTy, arrayTy});
+        context, {ptrTy, ptrTy, i64Ty, arrayTy, arrayTy});
     auto structPtrTy = LLVM::LLVMPointerType::get(structTy);
 
     SymbolRefAttr callee;

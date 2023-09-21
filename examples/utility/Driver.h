@@ -1,3 +1,4 @@
+#include "metal/Conversion/MetalPasses.h"
 #include "metal/Conversion/MetalToLLVM.h"
 #include "metal/IR/MetalDialect.h"
 #include "metal/IR/MetalOps.h"
@@ -17,8 +18,8 @@
 #include "mlir/Transforms/Passes.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/TargetParser/Host.h"
 
 #ifndef METAL_DRIVER_H
 #define METAL_DRIVER_H
@@ -103,7 +104,7 @@ public:
   }
 
   void translateToLLVM() {
-    _pm->addPass(mlir::metal::createConvertMetalToLLVMPass());
+    _pm->addPass(mlir::metal::createConvertMetalToLLVM());
     if (mlir::failed(_pm->run(*_module)))
       exit(EXIT_FAILURE);
 
@@ -152,7 +153,7 @@ private:
     auto cpu = "generic";
     auto features = "";
     llvm::TargetOptions opt;
-    auto rm = llvm::Optional<llvm::Reloc::Model>();
+    auto rm = std::optional<llvm::Reloc::Model>();
     auto targetMachine =
         target->createTargetMachine(targetTriple, cpu, features, opt, rm);
 

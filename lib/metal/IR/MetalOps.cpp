@@ -7,8 +7,8 @@
 
 #include "metal/IR/MetalOps.h"
 #include "metal/IR/MetalDialect.h"
-#include "metal/IR/MetalMemRefType.h"
 #include "metal/IR/MetalOpsEnums.cpp.inc"
+#include "metal/IR/MetalTypes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/OpImplementation.h"
 
@@ -63,7 +63,8 @@ mlir::Block &KernelOp::getEntryBlock() { return getRegion().front(); }
 mlir::LogicalResult KernelOp::verify() {
   auto index = -1;
   for (auto it : llvm::enumerate(getBuffers())) {
-    auto memRef = it.value().getType().dyn_cast<mlir::metal::MetalMemRefType>();
+    auto memRef =
+        llvm::dyn_cast<mlir::metal::MetalMemRefType>(it.value().getType());
     if (!memRef) {
       index = it.index();
       break;
@@ -72,7 +73,7 @@ mlir::LogicalResult KernelOp::verify() {
     auto type = memRef.getType();
     if (type.isF16() || type.isF32() || type.isIndex())
       continue;
-    if (auto intTy = type.dyn_cast<mlir::IntegerType>()) {
+    if (auto intTy = llvm::dyn_cast<mlir::IntegerType>(type)) {
       switch (intTy.getWidth()) {
       case 1:
       case 8:
@@ -143,7 +144,7 @@ mlir::OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) {
 //===----------------------------------------------------------------------===//
 
 mlir::LogicalResult AllocaOp::verify() {
-  if (getResult().getType().dyn_cast<MetalMemRefType>().getSize() == 0)
+  if (llvm::dyn_cast<MetalMemRefType>(getResult().getType()).getSize() == 0)
     return emitOpError() << "memRef size cannot be 0";
 
   return mlir::success();
@@ -156,7 +157,7 @@ mlir::LogicalResult AllocaOp::verify() {
 static mlir::LogicalResult
 checkIndex(mlir::Operation *op, MetalMemRefType memRef, mlir::Value index) {
   if (auto constantOp = index.getDefiningOp<ConstantOp>()) {
-    auto attr = constantOp.getValue().dyn_cast<mlir::IntegerAttr>();
+    auto attr = llvm::dyn_cast<mlir::IntegerAttr>(constantOp.getValue());
     uint64_t index = attr.getUInt();
     uint32_t size = memRef.getSize();
     if (size > 0 && index >= size)
@@ -172,7 +173,7 @@ checkIndex(mlir::Operation *op, MetalMemRefType memRef, mlir::Value index) {
 //===----------------------------------------------------------------------===//
 
 mlir::LogicalResult StoreOp::verify() {
-  auto memRef = getMemref().getType().dyn_cast<MetalMemRefType>();
+  auto memRef = llvm::dyn_cast<MetalMemRefType>(getMemref().getType());
   auto valueType = getValue().getType();
   auto memRefType = memRef.getType();
   if (memRefType != valueType)
@@ -189,12 +190,12 @@ void GetElementOp::build(OpBuilder &builder, OperationState &result,
                          Value memref, Value index) {
   result.addOperands(memref);
   result.addOperands(index);
-  auto type = memref.getType().cast<MetalMemRefType>().getType();
+  auto type = llvm::cast<MetalMemRefType>(memref.getType()).getType();
   result.types.push_back(type);
 };
 
 mlir::LogicalResult GetElementOp::verify() {
-  auto memRef = getMemref().getType().dyn_cast<MetalMemRefType>();
+  auto memRef = llvm::dyn_cast<MetalMemRefType>(getMemref().getType());
   auto resultType = getResult().getType();
   auto memRefType = memRef.getType();
   if (memRefType != resultType)
@@ -261,7 +262,8 @@ mlir::LogicalResult UnaryExpOp::verify() {
 }
 
 mlir::OpFoldResult UnaryExpOp::fold(FoldAdaptor adaptor) {
-  auto constant = dyn_cast<mlir::metal::ConstantOp>(getArgument().getDefiningOp());
+  auto constant =
+      dyn_cast<mlir::metal::ConstantOp>(getArgument().getDefiningOp());
   if (!constant)
     return nullptr;
 
@@ -269,15 +271,16 @@ mlir::OpFoldResult UnaryExpOp::fold(FoldAdaptor adaptor) {
 
   switch (getUnaryOperator()) {
   case mlir::metal::UnaryExpOperator::notOp: {
-    auto value = constant.getValueAttr().dyn_cast<mlir::BoolAttr>().getValue();
+    auto value =
+        llvm::dyn_cast<mlir::BoolAttr>(constant.getValueAttr()).getValue();
     return builder.getBoolAttr(!value);
   }
   case mlir::metal::UnaryExpOperator::minusOp: {
     auto attr = constant.getValueAttr();
-    if (auto intAttr = attr.dyn_cast<mlir::IntegerAttr>()) {
+    if (auto intAttr = llvm::dyn_cast<mlir::IntegerAttr>(attr)) {
       return builder.getIntegerAttr(attr.getType(), -intAttr.getSInt());
     }
-    if (auto floatAttr = attr.dyn_cast<mlir::FloatAttr>()) {
+    if (auto floatAttr = llvm::dyn_cast<mlir::FloatAttr>(attr)) {
       return builder.getFloatAttr(attr.getType(),
                                   -floatAttr.getValueAsDouble());
     }
@@ -515,8 +518,8 @@ void BufferGetContentsOp::build(OpBuilder &builder, OperationState &result,
 
 mlir::LogicalResult BufferGetContentsOp::verify() {
   auto elementType =
-      getResult().getType().cast<mlir::MemRefType>().getElementType();
-  if (elementType.isa<mlir::IntegerType>() || elementType.isF16() ||
+      llvm::cast<mlir::MemRefType>(getResult().getType()).getElementType();
+  if (isa<mlir::IntegerType>(elementType) || elementType.isF16() ||
       elementType.isF32())
     return mlir::success();
 
@@ -541,8 +544,7 @@ void CommandQueueMakeCommandBufferOp::build(OpBuilder &builder,
 };
 
 void CommandQueueMakeCommandBufferOp::print(mlir::OpAsmPrinter &printer) {
-  printer << " " << getFunctionName()
-          << " ";
+  printer << " " << getFunctionName() << " ";
   printer << getCommandQueue() << ", ";
   printer << getWidth() << ", ";
   printer << getHeight() << ", ";

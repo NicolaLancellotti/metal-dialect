@@ -5,6 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "metal/Conversion/MetalPasses.h"
 #include "metal/Conversion/MetalToLLVM.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
@@ -15,40 +16,36 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "PassDetail.h"
 
-using namespace mlir;
+namespace mlir::metal {
+
+#define GEN_PASS_DEF_CONVERTMETALTOLLVM
+#include "metal/Conversion/MetalPasses.h.inc"
 
 namespace {
+struct ConvertMetalToLLVM
+    : public impl::ConvertMetalToLLVMBase<ConvertMetalToLLVM> {
 
-struct ConvertMetalToLLVM : public ConvertMetalToLLVMBase<ConvertMetalToLLVM> {
-  ConvertMetalToLLVM() = default;
+  using impl::ConvertMetalToLLVMBase<
+      ConvertMetalToLLVM>::ConvertMetalToLLVMBase;
 
   void runOnOperation() final {
     LLVMConversionTarget target(getContext());
-    target.addLegalOp<ModuleOp>();
+    target.addLegalOp<mlir::ModuleOp>();
 
     RewritePatternSet patterns(&getContext());
     LLVMTypeConverter typeConverter(&getContext());
     populateFuncToLLVMConversionPatterns(typeConverter, patterns);
-    populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
+    populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
     cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
-    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter,
-                                                            patterns);
+    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
     mlir::metal::populateMetalToLLVMConversionPatterns(patterns, &getContext());
 
-    if (failed(
-            applyFullConversion(getOperation(), target, std::move(patterns))))
+    FrozenRewritePatternSet patternSet(std::move(patterns));
+    if (failed(applyFullConversion(getOperation(), target, patternSet)))
       signalPassFailure();
   }
 };
 
 } // end namespace
-
-namespace mlir {
-
-std::unique_ptr<mlir::Pass> mlir::metal::createConvertMetalToLLVMPass() {
-  return std::make_unique<ConvertMetalToLLVM>();
-}
-
-} // end namespace mlir
+} // namespace mlir::metal

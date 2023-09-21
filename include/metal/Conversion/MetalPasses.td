@@ -1,4 +1,4 @@
-//===--- Passes.td - Metal passes --------------------------*- tablegen -*-===//
+//===--- MetalPasses.td - Metal passes ---------------------*- tablegen -*-===//
 //
 // This source file is part of the metal-dialect open source project
 // See LICENSE.txt for license information
@@ -12,7 +12,6 @@ include "mlir/Pass/PassBase.td"
 
 def ConvertMetalToLLVM : Pass<"convert-metal-to-llvm"> {
   let summary = "Convert Metal operations into the LLVM dialect";
-  let constructor = "mlir::metal::createConvertMetalToLLVMPass()";
   let dependentDialects = ["LLVM::LLVMDialect"];
 }
 

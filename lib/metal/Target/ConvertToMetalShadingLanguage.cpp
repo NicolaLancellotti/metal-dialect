@@ -9,6 +9,7 @@
 #include "metal/Target/MetalShadingLanguage.h"
 #include "metal/Target/ModuleTranslation.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -30,9 +31,9 @@ void registerToMSLTranslation() {
         return ModuleTranslation::translateModule(module, output);
       },
       [](DialectRegistry &registry) {
-        registry.insert<arith::ArithDialect, func::FuncDialect,
-                        LLVM::LLVMDialect, metal::MetalDialect,
-                        mlir::memref::MemRefDialect>();
+        registry.insert<arith::ArithDialect, cf::ControlFlowDialect,
+                        func::FuncDialect, LLVM::LLVMDialect,
+                        metal::MetalDialect, mlir::memref::MemRefDialect>();
       });
 }
 

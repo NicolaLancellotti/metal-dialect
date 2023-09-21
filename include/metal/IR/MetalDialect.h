@@ -8,6 +8,7 @@
 #ifndef METAL_METALDIALECT_H
 #define METAL_METALDIALECT_H
 
+#include "mlir/Bytecode/BytecodeOpInterface.h"
 #include "mlir/IR/Dialect.h"
 
 #include "metal/IR/MetalOpsDialect.h.inc"

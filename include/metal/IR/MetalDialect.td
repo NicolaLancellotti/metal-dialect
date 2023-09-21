@@ -18,16 +18,12 @@ def Metal_Dialect : Dialect {
     let name = "metal";
     let summary = "Metal MLIR dialect.";
     let cppNamespace = "::mlir::metal";
-    let useFoldAPI = kEmitFoldAdaptorFolder;
 
+    let useDefaultTypePrinterParser = 1;
     let extraClassDeclaration = [{
       Operation *materializeConstant(OpBuilder &builder, Attribute value,
                                      Type type, Location loc) override;
-
-      ::mlir::Type parseType(::mlir::DialectAsmParser &parser) const override;
-
-      void printType(mlir::Type type,
-                     mlir::DialectAsmPrinter &printer) const override;
+      void registerTypes();
     }];
 }
 

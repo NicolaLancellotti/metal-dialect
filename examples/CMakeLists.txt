@@ -1,3 +1,5 @@
+include_directories(${METAL_SOURCE_DIR}/examples)
+
 add_subdirectory(utility)
 add_subdirectory(control-flow)
 add_subdirectory(expressions)

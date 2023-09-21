@@ -5,6 +5,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "metal/Conversion/MetalPasses.h"
+#include "metal/IR/MetalDialect.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
@@ -18,17 +20,14 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 
-#include "metal/Conversion/Passes.h"
-#include "metal/IR/MetalDialect.h"
-
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
-  mlir::registerMetalConversionPasses();
+  mlir::metal::registerMetalConversionPasses();
 
   mlir::DialectRegistry registry;
-  registry.insert<mlir::arith::ArithDialect, mlir::func::FuncDialect,
-                  mlir::LLVM::LLVMDialect, mlir::memref::MemRefDialect,
-                  mlir::metal::MetalDialect>();
+  registry.insert<mlir::arith::ArithDialect, mlir::cf::ControlFlowDialect,
+                  mlir::func::FuncDialect, mlir::LLVM::LLVMDialect,
+                  mlir::memref::MemRefDialect, mlir::metal::MetalDialect>();
   // Add the following to include *all* MLIR Core dialects, or selectively
   // include what you need like above. You only need to register dialects that
   // will be *parsed* by the tool, not the one generated

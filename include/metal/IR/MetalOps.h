@@ -10,11 +10,9 @@
 
 #include "mlir/IR/BuiltinAttributes.h"
 
-#include "metal/IR/MetalMemRefType.h"
 #include "metal/IR/MetalOpsEnums.h.inc"
+#include "metal/IR/MetalTypes.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/Dialect.h"
-#include "mlir/IR/OpDefinition.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 
 #define GET_OP_CLASSES

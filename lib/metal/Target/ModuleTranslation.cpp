@@ -23,7 +23,7 @@ struct Indent {
   indent();
 
 static llvm::StringRef typeToString(mlir::Type type) {
-  if (auto intTy = type.dyn_cast<mlir::IntegerType>())
+  if (auto intTy = llvm::dyn_cast<mlir::IntegerType>(type))
     switch (intTy.getWidth()) {
     case 1:
       return "bool";
@@ -90,10 +90,10 @@ void ModuleTranslation::translateKernel(mlir::metal::KernelOp op) {
   _output << "kernel void " << op.getName() << "(\n";
   for (auto tuple : llvm::zip(op.getBuffers(), op.getAddressSpaceDevice())) {
     auto buffer = std::get<0>(tuple);
-    auto memRef = buffer.getType().cast<mlir::metal::MetalMemRefType>();
+    auto memRef = llvm::cast<mlir::metal::MetalMemRefType>(buffer.getType());
     auto stringType = typeToString(memRef.getType());
 
-    auto isDevice = std::get<1>(tuple).cast<BoolAttr>().getValue();
+    auto isDevice = llvm::cast<BoolAttr>(std::get<1>(tuple)).getValue();
     _output << (isDevice ? "  device " : "  constant ");
     _output << stringType << " *v" << _varCount << " [[buffer(" << _varCount
             << ")]],\n";
@@ -102,7 +102,7 @@ void ModuleTranslation::translateKernel(mlir::metal::KernelOp op) {
   _output << "  uint3 id [[thread_position_in_grid]])\n";
 
   auto firstBlock = op.getBodyRegion().getBlocks().begin();
-  for (auto &it : llvm::enumerate(firstBlock->getArguments()))
+  for (auto const &it : llvm::enumerate(firstBlock->getArguments()))
     _buffers[it.value().getAsOpaquePointer()] = it.index();
 
   translate(op.getBodyRegion());
@@ -151,7 +151,7 @@ void ModuleTranslation::translateStatement(Operation *opInst) {
 }
 
 void ModuleTranslation::translate(mlir::metal::AllocaOp op) {
-  auto memRef = op.getResult().getType().cast<MetalMemRefType>();
+  auto memRef = llvm::cast<MetalMemRefType>(op.getResult().getType());
   auto stringType = typeToString(memRef.getType());
   _output << stringType << " v" << _varCount << "[" << memRef.getSize() << "]";
   _alloca[op] = _varCount++;
@@ -232,11 +232,11 @@ void ModuleTranslation::translateValue(Operation *opInst) {
 }
 
 void ModuleTranslation::translate(mlir::metal::ConstantOp op) {
-  if (auto v = op.getValue().dyn_cast<BoolAttr>())
+  if (auto v = llvm::dyn_cast<BoolAttr>(op.getValue()))
     _output << (v.getValue() ? "true" : "false");
-  else if (auto v = op.getValue().dyn_cast<IntegerAttr>())
+  else if (auto v = llvm::dyn_cast<IntegerAttr>(op.getValue()))
     _output << v.getValue();
-  else if (auto v = op.getValue().dyn_cast<FloatAttr>())
+  else if (auto v = llvm::dyn_cast<FloatAttr>(op.getValue()))
     _output << v.getValueAsDouble();
   else
     llvm_unreachable("Unexpected constant");

@@ -8,13 +8,10 @@
 #ifndef METAL_OPS
 #define METAL_OPS
 
-include "MetalDialect.td"
+include "metal/IR/MetalTypes.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/EnumAttr.td"
 include "mlir/IR/BuiltinAttributeInterfaces.td"
-
-def Metal_MemRefType :
-Type<CPred<"$_self.isa<MetalMemRefType>()">, "Metal MemRefType">;
 
 def Metal_Type : AnyTypeOf<[I1, UI8, UI16, UI32, UI64, SI8, SI16, SI32, SI64,
                             F16, F32]>;
@@ -26,6 +23,7 @@ def Metal_Type : AnyTypeOf<[I1, UI8, UI16, UI32, UI64, SI8, SI16, SI32, SI64,
 def ModuleOp : Metal_Op<"module", [
     IsolatedFromAbove,
     SingleBlockImplicitTerminator<"ModuleEndOp">]> {
+  let summary = "Module operation";
 
   let regions = (region SizedRegion<1>:$body);
 
@@ -38,6 +36,8 @@ def ModuleOp : Metal_Op<"module", [
 
 def ModuleEndOp : Metal_Op<"module_end", [
     Terminator, HasParent<"ModuleOp">]> {
+  let summary = "Module end operation";
+
   let assemblyFormat = "attr-dict";
 }
 
@@ -47,6 +47,8 @@ def ModuleEndOp : Metal_Op<"module_end", [
 
 def KernelOp : Metal_Op<"kernel", [SingleBlockImplicitTerminator<"ReturnOp">,
     HasParent<"ModuleOp">]> {
+  let summary = "Kernel operation";
+
   let arguments = (ins StrAttr:$name, ArrayAttr:$address_space_device);
 
   let regions = (region SizedRegion<1>:$bodyRegion);
@@ -72,6 +74,8 @@ def KernelOp : Metal_Op<"kernel", [SingleBlockImplicitTerminator<"ReturnOp">,
 //===----------------------------------------------------------------------===//
 
 def ReturnOp : Metal_Op<"return", [Pure, Terminator]> {
+  let summary = "Return operation";
+
   let assemblyFormat = "attr-dict";
 }
 
@@ -80,6 +84,8 @@ def ReturnOp : Metal_Op<"return", [Pure, Terminator]> {
 //===----------------------------------------------------------------------===//
 
 def ConstantOp : Metal_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["value", "result"]>,]> {
+  let summary = "Constant operation";
+
   let arguments = (ins TypedAttrInterface:$value);
   let results = (outs Metal_Type:$result);
 
@@ -87,11 +93,9 @@ def ConstantOp : Metal_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["value
     OpBuilder<(ins "TypedAttr":$attr)>
   ];
 
-  let hasCustomAssemblyFormat = 1;
-
   let hasFolder = 1;
 
-  let assemblyFormat = "attr-dict $value";
+  let assemblyFormat = "$value attr-dict";
 }
 
 //===----------------------------------------------------------------------===//
@@ -99,6 +103,8 @@ def ConstantOp : Metal_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["value
 //===----------------------------------------------------------------------===//
 
 def AllocaOp : Metal_Op<"alloca"> {
+  let summary = "Alloca operation";
+
   let results = (outs Metal_MemRefType);
 
   let builders = [
@@ -117,6 +123,8 @@ def AllocaOp : Metal_Op<"alloca"> {
 //===----------------------------------------------------------------------===//
 
 def StoreOp : Metal_Op<"store"> {
+  let summary = "Store operation";
+
   let arguments = (ins Metal_Type:$value, Metal_MemRefType:$memref, UI32:$index);
 
   let hasVerifier = 1;
@@ -129,6 +137,8 @@ def StoreOp : Metal_Op<"store"> {
 //===----------------------------------------------------------------------===//
 
 def GetElementOp : Metal_Op<"get_element", [Pure]> {
+  let summary = "Get element operation";
+
   let arguments = (ins Metal_MemRefType:$memref, UI32:$index);
   let results = (outs Metal_Type:$result);
 
@@ -144,6 +154,8 @@ def GetElementOp : Metal_Op<"get_element", [Pure]> {
 //===----------------------------------------------------------------------===//
 
 def ThreadIdOp : Metal_Op<"thread_id", [Pure]> {
+  let summary = "Thread id operation";
+
   let arguments = (ins StrAttr:$dimension);
   let results = (outs UI32);
 
@@ -159,6 +171,8 @@ def ThreadIdOp : Metal_Op<"thread_id", [Pure]> {
 //===----------------------------------------------------------------------===//
 
 def CastOp : Metal_Op<"cast", [Pure]> {
+  let summary = "Cast operation";
+
   let arguments = (ins Metal_Type:$argument);
   let results = (outs Metal_Type);
 
@@ -179,6 +193,8 @@ def UnaryExpOperator : I64EnumAttr<
 }
 
 def UnaryExpOp : Metal_Op<"unary_exp", [Pure]> {
+  let summary = "Unary expression operation";
+
   let arguments = (ins UnaryExpOperator:$unaryOperator, Metal_Type:$argument);
   let results = (outs Metal_Type);
 
@@ -230,6 +246,8 @@ def BinaryExpOperator : I64EnumAttr<
 }
 
 def BinaryExpOp : Metal_Op<"binary_exp", [Pure]> {
+  let summary = "Binary expression operation";
+
   let arguments = (ins BinaryExpOperator:$binaryOperator, Metal_Type:$lhs, Metal_Type:$rhs);
   let results = (outs Metal_Type);
 
@@ -247,6 +265,8 @@ def BinaryExpOp : Metal_Op<"binary_exp", [Pure]> {
 //===----------------------------------------------------------------------===//
 
 def YieldOp : Metal_Op<"yield", [Pure, Terminator]> {
+  let summary = "Yield operation";
+
   let assemblyFormat = "attr-dict";
 }
 
@@ -255,6 +275,8 @@ def YieldOp : Metal_Op<"yield", [Pure, Terminator]> {
 //===----------------------------------------------------------------------===//
 
 def IfOp : Metal_Op<"if", [RecursiveMemoryEffects, NoRegionArguments]> {
+  let summary = "If-then-else operation";
+
   let arguments = (ins I1:$condition);
 
   let regions = (region SizedRegion<1>:$thenRegion, AnyRegion:$elseRegion);
@@ -272,6 +294,8 @@ def IfOp : Metal_Op<"if", [RecursiveMemoryEffects, NoRegionArguments]> {
 //===----------------------------------------------------------------------===//
 
 def WhileOp : Metal_Op<"while", [RecursiveMemoryEffects, NoRegionArguments]> {
+  let summary = "While operation";
+
   let regions = (region SizedRegion<1>:$conditionRegion, SizedRegion<1>:$bodyRegion);
 
   let builders = [
@@ -286,6 +310,8 @@ def WhileOp : Metal_Op<"while", [RecursiveMemoryEffects, NoRegionArguments]> {
 
 def YieldWhileOp : Metal_Op<"while_yield", [Pure, Terminator,
                                             HasParent<"WhileOp">]> {
+  let summary = "Yield while operation";
+
   let arguments = (ins I1:$condition);
 
   let assemblyFormat = "$condition attr-dict ";
@@ -293,10 +319,12 @@ def YieldWhileOp : Metal_Op<"while_yield", [Pure, Terminator,
 
 
 //===----------------------------------------------------------------------===//
-// Runtime - Device
+// ReleaseOp
 //===----------------------------------------------------------------------===//
 
 def ReleaseOp : Metal_Op<"release"> {
+  let summary = "Release operation";
+
   let arguments = (ins Index:$ref);
 
   let assemblyFormat = "$ref attr-dict `:` type(operands)";
@@ -307,6 +335,8 @@ def ReleaseOp : Metal_Op<"release"> {
 //===----------------------------------------------------------------------===//
 
 def DeviceMakeDefaultOp : Metal_Op<"device_make_default"> {
+  let summary = "Device make operation";
+
   let results = (outs Index:$device);
 
   let builders = [OpBuilder<(ins)>];
@@ -315,6 +345,8 @@ def DeviceMakeDefaultOp : Metal_Op<"device_make_default"> {
 }
 
 def DeviceMakeCommandQueueOp : Metal_Op<"device_make_command_queue"> {
+  let summary = "Device make command queue operation";
+
   let arguments = (ins Index:$device);
   let results = (outs Index:$commandQueue);
 
@@ -326,6 +358,8 @@ def DeviceMakeCommandQueueOp : Metal_Op<"device_make_command_queue"> {
 }
 
 def DeviceMakeBufferOp : Metal_Op<"device_make_buffer"> {
+  let summary = "Device make buffer operation";
+
   let arguments = (ins Index:$device, I1:$isStorageModeManaged,
                        I64:$count, I64:$sizeType);
 
@@ -347,6 +381,8 @@ def DeviceMakeBufferOp : Metal_Op<"device_make_buffer"> {
 //===----------------------------------------------------------------------===//
 
 def BufferGetContentsOp : Metal_Op<"buffer_get_contents"> {
+  let summary = "Buffer get contents operation";
+
   let arguments = (ins Index:$device);
 
   let results = (outs AnyMemRef);
@@ -365,6 +401,8 @@ def BufferGetContentsOp : Metal_Op<"buffer_get_contents"> {
 //===----------------------------------------------------------------------===//
 
 def CommandQueueMakeCommandBufferOp : Metal_Op<"command_queue_make_command_buffer"> {
+  let summary = "Command queue make command buffer operation";
+
   let arguments = (ins Index:$commandQueue, I64:$width, I64:$height, I64:$depth,
                        StrAttr:$functionName);
   let results = (outs Index);
@@ -382,6 +420,8 @@ def CommandQueueMakeCommandBufferOp : Metal_Op<"command_queue_make_command_buffe
 //===----------------------------------------------------------------------===//
 
 def CommandBufferAddBufferOp : Metal_Op<"command_buffer_add_buffer"> {
+  let summary = "Command buffer add buffer operation";
+
   let arguments = (ins Index:$commandBuffer, Index:$bufferRef, I64:$index);
 
   let assemblyFormat = "$commandBuffer `,`$bufferRef `,` $index "
@@ -389,12 +429,16 @@ def CommandBufferAddBufferOp : Metal_Op<"command_buffer_add_buffer"> {
 }
 
 def CommandBufferCommitOp : Metal_Op<"command_buffer_commit"> {
+  let summary = "Command buffer commit operation";
+
   let arguments = (ins Index:$commandBuffer);
 
   let assemblyFormat = "$commandBuffer attr-dict `:` type(operands)";
 }
 
 def CommandBufferWaitUntilCompletedOp : Metal_Op<"command_buffer_wait_until_completed"> {
+  let summary = "Command buffer wait until completed operation";
+
   let arguments = (ins Index:$commandBuffer);
 
   let assemblyFormat = "$commandBuffer attr-dict `:` type(operands)";

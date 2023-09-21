@@ -1,17 +1,21 @@
 #!/bin/bash
 set -x
 
-llc_bin="llvm-project/build/bin/llc"
-metal_translate="build/bin/metal-translate"
-metal_opt="build/bin/metal-opt"
-runtime_file="MetalRuntime/.build/release/libMetalRuntime.a"
+input=$1
+output=$2
+llvm_build_dir=$3
 
-metal_file=""$2"/default.metal"
-metal_lib=""$2"/default.metallib"
-mlir_llvm_file=""$2"/llvm.mlir"
-llvm_file=""$2"/llvm.ll"
-assembly_file=""$2"/assembly.s"
-binary_file=""$2"/$(basename "$1" .mlir)"
+llc_bin=$llvm_build_dir/bin/llc
+metal_translate=build/bin/metal-translate
+metal_opt=build/bin/metal-opt
+runtime_file=MetalRuntime/.build/release/libMetalRuntime.a
+
+metal_file=$output/default.metal
+metal_lib=$output/default.metallib
+mlir_llvm_file=$output/llvm.mlir
+llvm_file=$output/llvm.ll
+assembly_file=$output/assembly.s
+binary_file=$output/$(basename "$1" .mlir)
 
 # mlir to metal shading language
 $metal_translate $1 --mlir-to-msl 1> $metal_file &&

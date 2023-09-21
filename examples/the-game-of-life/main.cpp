@@ -402,7 +402,8 @@ static mlir::func::FuncOp createExecuteKernel(mlir::OpBuilder builder,
       builder.create<mlir::memref::StoreOp>(
           loc,
           builder.create<mlir::arith::AddIOp>(
-              loc, builder.create<mlir::memref::LoadOp>(loc, i, std::nullopt), i32_1),
+              loc, builder.create<mlir::memref::LoadOp>(loc, i, std::nullopt),
+              i32_1),
           i);
       auto value = builder.create<mlir::arith::CmpIOp>(
           loc, mlir::arith::CmpIPredicate::slt,
@@ -435,11 +436,13 @@ static mlir::func::FuncOp createExecuteKernel(mlir::OpBuilder builder,
       builder.create<mlir::memref::StoreOp>(
           loc,
           builder.create<mlir::arith::AddIOp>(
-              loc, builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt), i32_1),
+              loc, builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt),
+              i32_1),
           j);
       auto value = builder.create<mlir::arith::CmpIOp>(
           loc, mlir::arith::CmpIPredicate::slt,
-          builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt), i32_columns);
+          builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt),
+          i32_columns);
       builder.create<mlir::cf::CondBranchOp>(
           loc, value, internal_loop, llvm::ArrayRef<mlir::Value>(),
           internal_end, llvm::ArrayRef<mlir::Value>());
@@ -448,9 +451,11 @@ static mlir::func::FuncOp createExecuteKernel(mlir::OpBuilder builder,
       // internal_loop
       builder.setInsertionPointToStart(internal_loop);
       auto product = builder.create<mlir::arith::MulIOp>(
-          loc, builder.create<mlir::memref::LoadOp>(loc, i, std::nullopt), i32_columns);
+          loc, builder.create<mlir::memref::LoadOp>(loc, i, std::nullopt),
+          i32_columns);
       auto indexInt = builder.create<mlir::arith::AddIOp>(
-          loc, product, builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt));
+          loc, product,
+          builder.create<mlir::memref::LoadOp>(loc, j, std::nullopt));
       auto index =
           builder.create<mlir::arith::IndexCastOp>(loc, indexTy, indexInt);
       auto value = builder.create<mlir::memref::LoadOp>(

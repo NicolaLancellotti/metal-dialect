@@ -10,11 +10,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "metal/IR/MetalDialect.h"
 #include "mlir/InitAllTranslations.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Tools/mlir-translate/MlirTranslateMain.h"
-
-#include "metal/IR/MetalDialect.h"
 
 namespace mlir {
 void registerToMSLTranslation();

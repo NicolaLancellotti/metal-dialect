@@ -19,8 +19,6 @@ class Pass;
 namespace metal {
 void populateMetalToLLVMConversionPatterns(RewritePatternSet &patterns,
                                            MLIRContext *ctx);
-
-std::unique_ptr<mlir::Pass> createConvertMetalToLLVMPass();
 } // end namespace metal
 } // end namespace mlir
 
