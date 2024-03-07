@@ -12,7 +12,6 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/Verifier.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/Transforms/Passes.h"
@@ -168,7 +167,7 @@ private:
     }
 
     llvm::legacy::PassManager pass;
-    auto fileType = llvm::CGFT_ObjectFile;
+    auto fileType = llvm::CodeGenFileType::ObjectFile;
     if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType))
       exit(EXIT_FAILURE);
 

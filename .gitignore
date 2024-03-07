@@ -1,4 +1,6 @@
+CMakeUserPresets.json
 build
+.cache
 llvm-project/
 examples/MetalRuntimeExample/MetalRuntimeExample.xcodeproj/project.xcworkspace/xcuserdata
 examples/MetalRuntimeExample/MetalRuntimeExample.xcodeproj/xcuserdata

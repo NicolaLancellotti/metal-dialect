@@ -1,3 +1,4 @@
+#include <functional>
 #include <iostream>
 
 void computeDuration(std::string text, std::function<void(void)> closure) {

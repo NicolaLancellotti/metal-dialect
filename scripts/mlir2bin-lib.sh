@@ -4,10 +4,11 @@ set -x
 input=$1
 output=$2
 llvm_build_dir=$3
+preset=$4
 
 llc_bin=$llvm_build_dir/bin/llc
-metal_translate=build/bin/metal-translate
-metal_opt=build/bin/metal-opt
+metal_translate=build/${preset}/bin/metal-translate
+metal_opt=build/${preset}/bin/metal-opt
 runtime_file=MetalRuntime/.build/release/libMetalRuntime.a
 
 metal_file=$output/default.metal

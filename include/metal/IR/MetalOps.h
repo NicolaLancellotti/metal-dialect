@@ -12,6 +12,7 @@
 
 #include "metal/IR/MetalOpsEnums.h.inc"
 #include "metal/IR/MetalTypes.h"
+#include "mlir/Bytecode/BytecodeOpInterface.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 

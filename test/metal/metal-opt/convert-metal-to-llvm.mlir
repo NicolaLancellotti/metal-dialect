@@ -166,94 +166,92 @@ module {
   }
 }
 
-// CHECK:  module {
-// CHECK:    llvm.func @_MetalRelease(i64)
-// CHECK:    llvm.func @_MetalCommandBufferWaitUntilCompleted(i64)
-// CHECK:    llvm.func @_MetalCommandBufferCommit(i64)
-// CHECK:    llvm.func @_MetalCommandBufferAddBuffer(i64, i64, i64)
-// CHECK:    llvm.func @_MetalBufferGetContents(i64, !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>)
-// CHECK:    llvm.func @_MetalCommandQueueMakeCommandBuffer(i64, !llvm.ptr<i8>, !llvm.ptr<i8>, i64, i64, i64) -> i64
-// CHECK:    llvm.mlir.global internal constant @life("life") {addr_space = 0 : i32}
-// CHECK:    llvm.mlir.global internal constant @metallib("./default.metallib\00") {addr_space = 0 : i32}
-// CHECK:    llvm.func @_MetalDeviceMakeBuffer(i64, i1, i64, i64) -> i64
-// CHECK:    llvm.func @_MetalDeviceMakeCommandQueue(i64) -> i64
-// CHECK:    llvm.func @_MetalDeviceMakeDefault() -> i64
-// CHECK:    llvm.func @putchar(i32) -> i32
-// CHECK:    llvm.func @main() -> i32 {
-// CHECK:      %0 = llvm.mlir.constant(-1 : i32) : i32
-// CHECK:      %1 = llvm.mlir.constant(0 : i32) : i32
-// CHECK:      %2 = llvm.mlir.constant(1 : i32) : i32
-// CHECK:      %3 = llvm.mlir.constant(0 : i64) : i64
-// CHECK:      %4 = llvm.mlir.constant(1 : i64) : i64
-// CHECK:      %5 = llvm.mlir.constant(2 : i64) : i64
-// CHECK:      %6 = llvm.mlir.constant(4 : i64) : i64
-// CHECK:      %7 = llvm.mlir.constant(0 : index) : i64
-// CHECK:      %8 = llvm.mlir.constant(1 : index) : i64
-// CHECK:      %9 = llvm.mlir.constant(2 : index) : i64
-// CHECK:      %10 = llvm.mlir.constant(3 : index) : i64
-// CHECK:      %11 = llvm.mlir.constant(10 : i32) : i32
-// CHECK:      %12 = llvm.mlir.constant(49 : i32) : i32
-// CHECK:      %13 = llvm.mlir.constant(48 : i32) : i32
-// CHECK:      %14 = llvm.mlir.constant(5 : i32) : i32
-// CHECK:      %15 = llvm.mlir.constant(5 : i32) : i32
-// CHECK:      %16 = llvm.mlir.constant(5 : i64) : i64
-// CHECK:      %17 = llvm.mlir.constant(5 : i64) : i64
-// CHECK:      %18 = llvm.mlir.constant(25 : i64) : i64
-// CHECK:      %19 = llvm.call @_MetalDeviceMakeDefault() : () -> i64
-// CHECK:      %20 = llvm.call @_MetalDeviceMakeCommandQueue(%19) : (i64) -> i64
-// CHECK:      %21 = llvm.mlir.constant(false) : i1
-// CHECK:      %22 = llvm.call @_MetalDeviceMakeBuffer(%19, %21, %18, %6) : (i64, i1, i64, i64) -> i64
-// CHECK:      %23 = llvm.call @_MetalDeviceMakeBuffer(%19, %21, %5, %6) : (i64, i1, i64, i64) -> i64
-// CHECK:      %24 = llvm.call @_MetalDeviceMakeBuffer(%19, %21, %18, %6) : (i64, i1, i64, i64) -> i64
-// CHECK:      %25 = llvm.mlir.addressof @metallib : !llvm.ptr<array<19 x i8>>
-// CHECK:      %26 = llvm.mlir.constant(0 : index) : i64
-// CHECK:      %27 = llvm.getelementptr %25[%26, %26] : (!llvm.ptr<array<19 x i8>>, i64, i64) -> !llvm.ptr<i8>
-// CHECK:      %28 = llvm.mlir.addressof @life : !llvm.ptr<array<4 x i8>>
-// CHECK:      %29 = llvm.mlir.constant(0 : index) : i64
-// CHECK:      %30 = llvm.getelementptr %28[%29, %29] : (!llvm.ptr<array<4 x i8>>, i64, i64) -> !llvm.ptr<i8>
-// CHECK:      %31 = llvm.call @_MetalCommandQueueMakeCommandBuffer(%20, %27, %30, %16, %17, %4) : (i64, !llvm.ptr<i8>, !llvm.ptr<i8>, i64, i64, i64) -> i64
-// CHECK:      %32 = llvm.mlir.constant(1 : i32) : i32
-// CHECK:      %33 = llvm.alloca %32 x !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> : (i32) -> !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>
-// CHECK:      llvm.call @_MetalBufferGetContents(%22, %33) : (i64, !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>) -> ()
-// CHECK:      %34 = llvm.load %33 : !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>
-// CHECK:      %35 = llvm.extractvalue %34[1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> 
-// CHECK:      %36 = llvm.getelementptr %35[%7] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-// CHECK:      llvm.store %2, %36 : i32, !llvm.ptr
-// CHECK:      %37 = llvm.extractvalue %34[1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> 
-// CHECK:      %38 = llvm.getelementptr %37[%8] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-// CHECK:      llvm.store %2, %38 : i32, !llvm.ptr
-// CHECK:      %39 = llvm.extractvalue %34[1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> 
-// CHECK:      %40 = llvm.getelementptr %39[%9] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-// CHECK:      llvm.store %2, %40 : i32, !llvm.ptr
-// CHECK:      %41 = llvm.extractvalue %34[1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> 
-// CHECK:      %42 = llvm.getelementptr %41[%10] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-// CHECK:      llvm.store %2, %42 : i32, !llvm.ptr
-// CHECK:      %43 = llvm.mlir.constant(1 : i32) : i32
-// CHECK:      %44 = llvm.alloca %43 x !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> : (i32) -> !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>
-// CHECK:      llvm.call @_MetalBufferGetContents(%23, %44) : (i64, !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>) -> ()
-// CHECK:      %45 = llvm.load %44 : !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>
-// CHECK:      %46 = llvm.extractvalue %45[1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> 
-// CHECK:      %47 = llvm.getelementptr %46[%7] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-// CHECK:      llvm.store %14, %47 : i32, !llvm.ptr
-// CHECK:      %48 = llvm.extractvalue %45[1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> 
-// CHECK:      %49 = llvm.getelementptr %48[%8] : (!llvm.ptr, i64) -> !llvm.ptr, i32
-// CHECK:      llvm.store %15, %49 : i32, !llvm.ptr
-// CHECK:      %50 = llvm.mlir.constant(1 : i32) : i32
-// CHECK:      %51 = llvm.alloca %50 x !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> : (i32) -> !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>
-// CHECK:      llvm.call @_MetalBufferGetContents(%24, %51) : (i64, !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>) -> ()
-// CHECK:      %52 = llvm.load %51 : !llvm.ptr<struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>>
-// CHECK:      llvm.call @_MetalCommandBufferAddBuffer(%31, %22, %3) : (i64, i64, i64) -> ()
-// CHECK:      llvm.call @_MetalCommandBufferAddBuffer(%31, %23, %4) : (i64, i64, i64) -> ()
-// CHECK:      llvm.call @_MetalCommandBufferAddBuffer(%31, %24, %5) : (i64, i64, i64) -> ()
-// CHECK:      llvm.call @_MetalCommandBufferCommit(%31) : (i64) -> ()
-// CHECK:      llvm.call @_MetalCommandBufferWaitUntilCompleted(%31) : (i64) -> ()
-// CHECK:      llvm.call @_MetalRelease(%19) : (i64) -> ()
-// CHECK:      llvm.call @_MetalRelease(%22) : (i64) -> ()
-// CHECK:      llvm.call @_MetalRelease(%23) : (i64) -> ()
-// CHECK:      llvm.call @_MetalRelease(%24) : (i64) -> ()
-// CHECK:      llvm.call @_MetalRelease(%20) : (i64) -> ()
-// CHECK:      llvm.call @_MetalRelease(%31) : (i64) -> ()
-// CHECK:      llvm.return %1 : i32
-// CHECK:    }
-// CHECK:  }
+// CHECK-LABEL:   llvm.func @_MetalRelease(i64)
+// CHECK:         llvm.func @_MetalCommandBufferWaitUntilCompleted(i64)
+// CHECK:         llvm.func @_MetalCommandBufferCommit(i64)
+// CHECK:         llvm.func @_MetalCommandBufferAddBuffer(i64, i64, i64)
+// CHECK:         llvm.func @_MetalBufferGetContents(i64, !llvm.ptr)
+// CHECK:         llvm.func @_MetalCommandQueueMakeCommandBuffer(i64, !llvm.ptr, !llvm.ptr, i64, i64, i64) -> i64
+// CHECK:         llvm.mlir.global internal constant @life("life") {addr_space = 0 : i32}
+// CHECK:         llvm.mlir.global internal constant @metallib("./default.metallib\00") {addr_space = 0 : i32}
+// CHECK:         llvm.func @_MetalDeviceMakeBuffer(i64, i1, i64, i64) -> i64
+// CHECK:         llvm.func @_MetalDeviceMakeCommandQueue(i64) -> i64
+// CHECK:         llvm.func @_MetalDeviceMakeDefault() -> i64
+// CHECK:         llvm.func @putchar(i32) -> i32
 
+// CHECK-LABEL:   llvm.func @main() -> i32 {
+// CHECK:           %[[VAL_0:.*]] = llvm.mlir.constant(-1 : i32) : i32
+// CHECK:           %[[VAL_1:.*]] = llvm.mlir.constant(0 : i32) : i32
+// CHECK:           %[[VAL_2:.*]] = llvm.mlir.constant(1 : i32) : i32
+// CHECK:           %[[VAL_3:.*]] = llvm.mlir.constant(0 : i64) : i64
+// CHECK:           %[[VAL_4:.*]] = llvm.mlir.constant(1 : i64) : i64
+// CHECK:           %[[VAL_5:.*]] = llvm.mlir.constant(2 : i64) : i64
+// CHECK:           %[[VAL_6:.*]] = llvm.mlir.constant(4 : i64) : i64
+// CHECK:           %[[VAL_7:.*]] = llvm.mlir.constant(0 : index) : i64
+// CHECK:           %[[VAL_8:.*]] = llvm.mlir.constant(1 : index) : i64
+// CHECK:           %[[VAL_9:.*]] = llvm.mlir.constant(2 : index) : i64
+// CHECK:           %[[VAL_10:.*]] = llvm.mlir.constant(3 : index) : i64
+// CHECK:           %[[VAL_11:.*]] = llvm.mlir.constant(10 : i32) : i32
+// CHECK:           %[[VAL_12:.*]] = llvm.mlir.constant(49 : i32) : i32
+// CHECK:           %[[VAL_13:.*]] = llvm.mlir.constant(48 : i32) : i32
+// CHECK:           %[[VAL_14:.*]] = llvm.mlir.constant(5 : i32) : i32
+// CHECK:           %[[VAL_15:.*]] = llvm.mlir.constant(5 : i32) : i32
+// CHECK:           %[[VAL_16:.*]] = llvm.mlir.constant(5 : i64) : i64
+// CHECK:           %[[VAL_17:.*]] = llvm.mlir.constant(5 : i64) : i64
+// CHECK:           %[[VAL_18:.*]] = llvm.mlir.constant(25 : i64) : i64
+// CHECK:           %[[VAL_19:.*]] = llvm.call @_MetalDeviceMakeDefault() : () -> i64
+// CHECK:           %[[VAL_20:.*]] = llvm.call @_MetalDeviceMakeCommandQueue(%[[VAL_19]]) : (i64) -> i64
+// CHECK:           %[[VAL_21:.*]] = llvm.mlir.constant(false) : i1
+// CHECK:           %[[VAL_22:.*]] = llvm.call @_MetalDeviceMakeBuffer(%[[VAL_19]], %[[VAL_21]], %[[VAL_18]], %[[VAL_6]]) : (i64, i1, i64, i64) -> i64
+// CHECK:           %[[VAL_23:.*]] = llvm.call @_MetalDeviceMakeBuffer(%[[VAL_19]], %[[VAL_21]], %[[VAL_5]], %[[VAL_6]]) : (i64, i1, i64, i64) -> i64
+// CHECK:           %[[VAL_24:.*]] = llvm.call @_MetalDeviceMakeBuffer(%[[VAL_19]], %[[VAL_21]], %[[VAL_18]], %[[VAL_6]]) : (i64, i1, i64, i64) -> i64
+// CHECK:           %[[VAL_25:.*]] = llvm.mlir.addressof @metallib : !llvm.ptr
+// CHECK:           %[[VAL_26:.*]] = llvm.mlir.constant(0 : index) : i64
+// CHECK:           %[[VAL_27:.*]] = llvm.getelementptr %[[VAL_25]]{{\[}}%[[VAL_26]], %[[VAL_26]]] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.array<19 x i8>
+// CHECK:           %[[VAL_28:.*]] = llvm.mlir.addressof @life : !llvm.ptr
+// CHECK:           %[[VAL_29:.*]] = llvm.mlir.constant(0 : index) : i64
+// CHECK:           %[[VAL_30:.*]] = llvm.getelementptr %[[VAL_28]]{{\[}}%[[VAL_29]], %[[VAL_29]]] : (!llvm.ptr, i64, i64) -> !llvm.ptr, !llvm.array<4 x i8>
+// CHECK:           %[[VAL_31:.*]] = llvm.call @_MetalCommandQueueMakeCommandBuffer(%[[VAL_20]], %[[VAL_27]], %[[VAL_30]], %[[VAL_16]], %[[VAL_17]], %[[VAL_4]]) : (i64, !llvm.ptr, !llvm.ptr, i64, i64, i64) -> i64
+// CHECK:           %[[VAL_32:.*]] = llvm.mlir.constant(1 : i32) : i32
+// CHECK:           %[[VAL_33:.*]] = llvm.alloca %[[VAL_32]] x !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> : (i32) -> !llvm.ptr
+// CHECK:           llvm.call @_MetalBufferGetContents(%[[VAL_22]], %[[VAL_33]]) : (i64, !llvm.ptr) -> ()
+// CHECK:           %[[VAL_34:.*]] = llvm.load %[[VAL_33]] : !llvm.ptr -> !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           %[[VAL_35:.*]] = llvm.extractvalue %[[VAL_34]][1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           %[[VAL_36:.*]] = llvm.getelementptr %[[VAL_35]]{{\[}}%[[VAL_7]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           llvm.store %[[VAL_2]], %[[VAL_36]] : i32, !llvm.ptr
+// CHECK:           %[[VAL_37:.*]] = llvm.extractvalue %[[VAL_34]][1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           %[[VAL_38:.*]] = llvm.getelementptr %[[VAL_37]]{{\[}}%[[VAL_8]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           llvm.store %[[VAL_2]], %[[VAL_38]] : i32, !llvm.ptr
+// CHECK:           %[[VAL_39:.*]] = llvm.extractvalue %[[VAL_34]][1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           %[[VAL_40:.*]] = llvm.getelementptr %[[VAL_39]]{{\[}}%[[VAL_9]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           llvm.store %[[VAL_2]], %[[VAL_40]] : i32, !llvm.ptr
+// CHECK:           %[[VAL_41:.*]] = llvm.extractvalue %[[VAL_34]][1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           %[[VAL_42:.*]] = llvm.getelementptr %[[VAL_41]]{{\[}}%[[VAL_10]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           llvm.store %[[VAL_2]], %[[VAL_42]] : i32, !llvm.ptr
+// CHECK:           %[[VAL_43:.*]] = llvm.mlir.constant(1 : i32) : i32
+// CHECK:           %[[VAL_44:.*]] = llvm.alloca %[[VAL_43]] x !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> : (i32) -> !llvm.ptr
+// CHECK:           llvm.call @_MetalBufferGetContents(%[[VAL_23]], %[[VAL_44]]) : (i64, !llvm.ptr) -> ()
+// CHECK:           %[[VAL_45:.*]] = llvm.load %[[VAL_44]] : !llvm.ptr -> !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           %[[VAL_46:.*]] = llvm.extractvalue %[[VAL_45]][1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           %[[VAL_47:.*]] = llvm.getelementptr %[[VAL_46]]{{\[}}%[[VAL_7]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           llvm.store %[[VAL_14]], %[[VAL_47]] : i32, !llvm.ptr
+// CHECK:           %[[VAL_48:.*]] = llvm.extractvalue %[[VAL_45]][1] : !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           %[[VAL_49:.*]] = llvm.getelementptr %[[VAL_48]]{{\[}}%[[VAL_8]]] : (!llvm.ptr, i64) -> !llvm.ptr, i32
+// CHECK:           llvm.store %[[VAL_15]], %[[VAL_49]] : i32, !llvm.ptr
+// CHECK:           %[[VAL_50:.*]] = llvm.mlir.constant(1 : i32) : i32
+// CHECK:           %[[VAL_51:.*]] = llvm.alloca %[[VAL_50]] x !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)> : (i32) -> !llvm.ptr
+// CHECK:           llvm.call @_MetalBufferGetContents(%[[VAL_24]], %[[VAL_51]]) : (i64, !llvm.ptr) -> ()
+// CHECK:           %[[VAL_52:.*]] = llvm.load %[[VAL_51]] : !llvm.ptr -> !llvm.struct<(ptr, ptr, i64, array<1 x i64>, array<1 x i64>)>
+// CHECK:           llvm.call @_MetalCommandBufferAddBuffer(%[[VAL_31]], %[[VAL_22]], %[[VAL_3]]) : (i64, i64, i64) -> ()
+// CHECK:           llvm.call @_MetalCommandBufferAddBuffer(%[[VAL_31]], %[[VAL_23]], %[[VAL_4]]) : (i64, i64, i64) -> ()
+// CHECK:           llvm.call @_MetalCommandBufferAddBuffer(%[[VAL_31]], %[[VAL_24]], %[[VAL_5]]) : (i64, i64, i64) -> ()
+// CHECK:           llvm.call @_MetalCommandBufferCommit(%[[VAL_31]]) : (i64) -> ()
+// CHECK:           llvm.call @_MetalCommandBufferWaitUntilCompleted(%[[VAL_31]]) : (i64) -> ()
+// CHECK:           llvm.call @_MetalRelease(%[[VAL_19]]) : (i64) -> ()
+// CHECK:           llvm.call @_MetalRelease(%[[VAL_22]]) : (i64) -> ()
+// CHECK:           llvm.call @_MetalRelease(%[[VAL_23]]) : (i64) -> ()
+// CHECK:           llvm.call @_MetalRelease(%[[VAL_24]]) : (i64) -> ()
+// CHECK:           llvm.call @_MetalRelease(%[[VAL_20]]) : (i64) -> ()
+// CHECK:           llvm.call @_MetalRelease(%[[VAL_31]]) : (i64) -> ()
+// CHECK:           llvm.return %[[VAL_1]] : i32
+// CHECK:         }

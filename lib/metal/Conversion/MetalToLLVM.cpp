@@ -47,8 +47,8 @@ static Value getOrCreateGlobalString(Location loc, OpBuilder &builder,
       loc, builder.getI64Type(),
       builder.getIntegerAttr(builder.getIndexType(), 0));
   return builder.create<LLVM::GEPOp>(
-      loc, LLVM::LLVMPointerType::get(builder.getIntegerType(8)), globalPtr,
-      ArrayRef<Value>({cst0, cst0}));
+      loc, LLVM::LLVMPointerType::get(builder.getContext()), global.getType(),
+      globalPtr, ArrayRef<Value>({cst0, cst0}));
 }
 
 static void rewriteOp(Operation *op, ArrayRef<Value> operands,
@@ -176,13 +176,12 @@ public:
     auto arrayTy = LLVM::LLVMArrayType::get(i64Ty, 1);
     auto structTy = LLVM::LLVMStructType::getLiteral(
         context, {ptrTy, ptrTy, i64Ty, arrayTy, arrayTy});
-    auto structPtrTy = LLVM::LLVMPointerType::get(structTy);
 
     SymbolRefAttr callee;
     if (module.lookupSymbol<LLVMFuncOp>(functionName))
       callee = SymbolRefAttr::get(context, functionName);
     else {
-      ArrayRef<Type> types = {i64Ty, structPtrTy};
+      ArrayRef<Type> types = {i64Ty, ptrTy};
       auto llvmFnType = LLVM::LLVMFunctionType::get(voidTy, types, false);
       callee = insertFunction(rewriter, module, llvmFnType, functionName);
     }
@@ -190,11 +189,11 @@ public:
     auto one =
         rewriter.create<arith::ConstantOp>(loc, rewriter.getI32IntegerAttr(1));
     auto alloca =
-        rewriter.create<mlir::LLVM::AllocaOp>(loc, structPtrTy, one, 0);
+        rewriter.create<mlir::LLVM::AllocaOp>(loc, ptrTy, structTy, one, 0);
 
     ArrayRef<Value> newOperand = {operands[0], alloca};
     rewriter.create<func::CallOp>(loc, callee, std::nullopt, newOperand);
-    rewriter.replaceOpWithNewOp<mlir::LLVM::LoadOp>(op, alloca);
+    rewriter.replaceOpWithNewOp<mlir::LLVM::LoadOp>(op, structTy, alloca);
     return success();
   }
 };
@@ -211,7 +210,7 @@ public:
     auto loc = op->getLoc();
     auto module = op->getParentOfType<ModuleOp>();
     auto i64Ty = rewriter.getI64Type();
-    auto i8PtrTy = LLVM::LLVMPointerType::get(rewriter.getIntegerType(8));
+    auto ptrTy = LLVM::LLVMPointerType::get(rewriter.getContext());
 
     auto lib =
         getOrCreateGlobalString(loc, rewriter, "metallib",
@@ -226,7 +225,7 @@ public:
                                    operands[1], operands[2], operands[3]};
 
     rewriteOp(op, newOperands, rewriter, "_MetalCommandQueueMakeCommandBuffer",
-              i64Ty, {i64Ty, i8PtrTy, i8PtrTy, i64Ty, i64Ty, i64Ty});
+              i64Ty, {i64Ty, ptrTy, ptrTy, i64Ty, i64Ty, i64Ty});
     return success();
   }
 };

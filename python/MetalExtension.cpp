@@ -8,7 +8,6 @@
 #include "metal-c/Dialects.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
 
-namespace py = pybind11;
 using namespace mlir::python::adaptors;
 
 PYBIND11_MODULE(_metalDialects, m) {
