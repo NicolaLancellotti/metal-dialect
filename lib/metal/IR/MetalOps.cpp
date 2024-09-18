@@ -60,7 +60,7 @@ void KernelOp::build(OpBuilder &builder, OperationState &result, StringRef name,
 
 mlir::Block &KernelOp::getEntryBlock() { return getRegion().front(); }
 
-mlir::LogicalResult KernelOp::verify() {
+llvm::LogicalResult KernelOp::verify() {
   auto index = -1;
   for (auto it : llvm::enumerate(getBuffers())) {
     auto memRef =
@@ -143,7 +143,7 @@ mlir::OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) {
 // AllocaOp
 //===----------------------------------------------------------------------===//
 
-mlir::LogicalResult AllocaOp::verify() {
+llvm::LogicalResult AllocaOp::verify() {
   if (llvm::dyn_cast<MetalMemRefType>(getResult().getType()).getSize() == 0)
     return emitOpError() << "memRef size cannot be 0";
 
@@ -154,7 +154,7 @@ mlir::LogicalResult AllocaOp::verify() {
 // Check Index
 //===----------------------------------------------------------------------===//
 
-static mlir::LogicalResult
+static llvm::LogicalResult
 checkIndex(mlir::Operation *op, MetalMemRefType memRef, mlir::Value index) {
   if (auto constantOp = index.getDefiningOp<ConstantOp>()) {
     auto attr = llvm::dyn_cast<mlir::IntegerAttr>(constantOp.getValue());
@@ -172,7 +172,7 @@ checkIndex(mlir::Operation *op, MetalMemRefType memRef, mlir::Value index) {
 // StoreOp
 //===----------------------------------------------------------------------===//
 
-mlir::LogicalResult StoreOp::verify() {
+llvm::LogicalResult StoreOp::verify() {
   auto memRef = llvm::dyn_cast<MetalMemRefType>(getMemref().getType());
   auto valueType = getValue().getType();
   auto memRefType = memRef.getType();
@@ -194,7 +194,7 @@ void GetElementOp::build(OpBuilder &builder, OperationState &result,
   result.types.push_back(type);
 };
 
-mlir::LogicalResult GetElementOp::verify() {
+llvm::LogicalResult GetElementOp::verify() {
   auto memRef = llvm::dyn_cast<MetalMemRefType>(getMemref().getType());
   auto resultType = getResult().getType();
   auto memRefType = memRef.getType();
@@ -219,7 +219,7 @@ void ThreadIdOp::build(OpBuilder &builder, OperationState &result,
 // LoadOp
 //===----------------------------------------------------------------------===//
 
-mlir::LogicalResult ThreadIdOp::verify() {
+llvm::LogicalResult ThreadIdOp::verify() {
   auto dim = getDimension();
   if (dim != "x" && dim != "y" && dim != "z")
     return emitOpError() << "requires dimension to be `x` or `y` or `z`, "
@@ -240,7 +240,7 @@ void UnaryExpOp::build(OpBuilder &builder, OperationState &result,
   result.addOperands(argument);
 }
 
-mlir::LogicalResult UnaryExpOp::verify() {
+llvm::LogicalResult UnaryExpOp::verify() {
   auto argType = getType();
   auto resultType = getResult().getType();
   if (argType != resultType)
@@ -323,7 +323,7 @@ void BinaryExpOp::build(OpBuilder &builder, OperationState &result,
   result.addOperands(rhs);
 }
 
-mlir::LogicalResult BinaryExpOp::verify() {
+llvm::LogicalResult BinaryExpOp::verify() {
   auto lhsType = getLhs().getType();
   auto rhsType = getRhs().getType();
   auto resultType = getResult().getType();
@@ -440,7 +440,7 @@ auto WhileOp::build(
   bodyBuilder(builder, result.location);
 }
 
-mlir::LogicalResult WhileOp::verify() {
+llvm::LogicalResult WhileOp::verify() {
   auto &region = getConditionRegion();
 
   for (auto it = region.op_begin(); it != region.op_end(); it++) {
@@ -516,7 +516,7 @@ void BufferGetContentsOp::build(OpBuilder &builder, OperationState &result,
   result.addTypes(memRefType);
 };
 
-mlir::LogicalResult BufferGetContentsOp::verify() {
+llvm::LogicalResult BufferGetContentsOp::verify() {
   auto elementType =
       llvm::cast<mlir::MemRefType>(getResult().getType()).getElementType();
   if (isa<mlir::IntegerType>(elementType) || elementType.isF16() ||

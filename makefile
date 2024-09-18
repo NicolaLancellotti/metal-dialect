@@ -3,7 +3,7 @@
 
 METAL_PRESET=debug
 
-LLVM_COMMIT=llvmorg-18.1.0
+LLVM_COMMIT=llvmorg-19.1.0
 LLVM_PRESET=release
 LLVM_BUILD_DIR=${LLVM_SRC_DIR}/build/${LLVM_PRESET}
 LLVM_PYTHON_ENV=${HOME}/.venv/mlirdev
@@ -26,67 +26,71 @@ LLVM_SRC_DIR=${PROJECT_DIR}/llvm-project/
 # _____________________________________________________________________________
 # Targets
 
-.PHONY: all
+.SILENT:
+.NOTPARALLEL:
+
+.PHONY: help - Lists targets.
+help:
+	echo "Targets:"
+	sed -nr 's/^.PHONY: (.*) - (.*)/\1|\2/p' ${MAKEFILE_LIST} | \
+		awk -F '|' '{printf "* %-35s %s\n", $$1, $$2}' | sort
+
+.PHONY: all - Execute all LLVM and Metal targets.
 all:	llvm-all \
 		metal-all
 
-.PHONY: help
-help:
-	@echo "Targets:"
-	@sed -nr 's/^.PHONY:(.*)/\1/p' ${MAKEFILE_LIST}
-
 define format
-	@find ${1} -name "*.cpp" -or -name "*.h" | xargs clang-format -i
+	find ${1} -name "*.cpp" -or -name "*.h" | xargs clang-format -i
 endef
 
-.PHONY: format
+.PHONY: format - Format source files.
 format:
-	@echo "Format"
-	@$(call format, examples)
-	@$(call format, include)
-	@$(call format, lib)
-	@$(call format, metal-opt)
-	@$(call format, metal-translate)
-	@$(call format, MetalRuntime)
-	@$(call format, test)
+	echo "Format"
+	$(call format, examples)
+	$(call format, include)
+	$(call format, lib)
+	$(call format, metal-opt)
+	$(call format, metal-translate)
+	$(call format, MetalRuntime)
+	$(call format, test)
 
 # _____________________________________________________________________________
 # Targets - LLVM
 
-.PHONY: llvm-all
+.PHONY: llvm-all - Execute all LLVM targets.
 llvm-all: 	llvm-clone \
 			llvm-checkout \
 			llvm-generate-python-env \
 			llvm-generate-project \
 			llvm-build
 
-.PHONY: llvm-clean
+.PHONY: llvm-clean - Clean LLVM Build.
 llvm-clean:
-	@echo "LLVM - Clean"
-	@rm -rdf ${LLVM_BUILD_DIR}
+	echo "LLVM - Clean"
+	rm -rdf ${LLVM_BUILD_DIR}
 
-.PHONY: llvm-clone
+.PHONY: llvm-clone - Clone LLVM.
 llvm-clone:
-	@echo "LLVM - Clone"
+	echo "LLVM - Clone"
 	-git clone https://github.com/llvm/llvm-project.git
 
-.PHONY: llvm-checkout
+.PHONY: llvm-checkout - Checkout LLVM.
 llvm-checkout:
-	@echo "LLVM - Checkout"
-	@cd ${LLVM_SRC_DIR} && git fetch && git checkout ${LLVM_COMMIT}
+	echo "LLVM - Checkout"
+	cd ${LLVM_SRC_DIR} && git fetch && git checkout ${LLVM_COMMIT}
 
-.PHONY: llvm-generate-python-env
+.PHONY: llvm-generate-python-env - Generate LLVM Python Virtual Environment.
 llvm-generate-python-env:
-	@echo "LLVM - Generate Python Environment"
-	@/usr/bin/python3 -m venv ${LLVM_PYTHON_ENV} && \
+	echo "LLVM - Generate Python Environment"
+	/usr/bin/python3 -m venv ${LLVM_PYTHON_ENV} && \
 		source ${LLVM_PYTHON_ENV}/bin/activate && \
 		python -m pip install --upgrade pip && \
 		python -m pip install -r ${LLVM_SRC_DIR}/mlir/python/requirements.txt
 
-.PHONY: llvm-generate-project
+.PHONY: llvm-generate-project - Generate LLVM Project.
 llvm-generate-project:
-	@echo "LLVM - Generate Project"
-	@cmake -G Ninja -S ${LLVM_SRC_DIR}/llvm -B ${LLVM_BUILD_DIR} \
+	echo "LLVM - Generate Project"
+	cmake -G Ninja -S ${LLVM_SRC_DIR}/llvm -B ${LLVM_BUILD_DIR} \
 		-DLLVM_ENABLE_PROJECTS=mlir \
 		-DLLVM_TARGETS_TO_BUILD=host \
 		-DCMAKE_BUILD_TYPE=${LLVM_PRESET} \
@@ -97,15 +101,15 @@ llvm-generate-project:
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++
 
-.PHONY: llvm-build
+.PHONY: llvm-build - Build LLVM.
 llvm-build:
-	@echo "LLVM - Build"
-	@cmake --build ${LLVM_BUILD_DIR}
+	echo "LLVM - Build"
+	cmake --build ${LLVM_BUILD_DIR}
 
 # _____________________________________________________________________________
 # Targets - Metal
 
-.PHONY: metal-all
+.PHONY: metal-all - Execute all Metal targets.
 metal-all:	metal-generate-presets \
 			metal-generate-project \
 			metal-copy-compile-commands \
@@ -113,89 +117,89 @@ metal-all:	metal-generate-presets \
 			metal-build-runtime \
 			metal-build-examples
 
-.PHONY: metal-clean
+.PHONY: metal-clean - Clean Metal Build.
 metal-clean:
-	@echo "Metal - Clean"
-	@rm -rdf ${METAL_BUILD_DIR}
-	@rm -rdf ${RUNTIME_BUILD_DIR}
+	echo "Metal - Clean"
+	rm -rdf ${METAL_BUILD_DIR}
+	rm -rdf ${RUNTIME_BUILD_DIR}
 
-.PHONY: metal-generate-presets
+.PHONY: metal-generate-presets - Generate Metal CMake Presets.
 metal-generate-presets:
-	@echo "Metal - Generate Presets"
-	@echo $$CMAKE_PRESETS_TEMPLATE > ./CMakeUserPresets.json
+	echo "Metal - Generate Presets"
+	echo $$CMAKE_PRESETS_TEMPLATE > ./CMakeUserPresets.json
 
-.PHONY: metal-generate-project
+.PHONY: metal-generate-project - Generate Metal Project.
 metal-generate-project:
-	@echo "Metal - Generate Project"
-	@cmake -S ${PROJECT_DIR} --preset ${METAL_PRESET}
+	echo "Metal - Generate Project"
+	cmake -S ${PROJECT_DIR} --preset ${METAL_PRESET}
 
-.PHONY: metal-copy-compile-commands
+.PHONY: metal-copy-compile-commands - Copy Metal `compile_commands.json`.
 metal-copy-compile-commands:
-	@echo "Metal - Copy compile_commands.json"
-	@cp ${PROJECT_DIR}/build/${METAL_PRESET}/compile_commands.json  ${PROJECT_DIR}/build
+	echo "Metal - Copy compile_commands.json"
+	cp ${PROJECT_DIR}/build/${METAL_PRESET}/compile_commands.json  ${PROJECT_DIR}/build
 
-.PHONY: metal-build-mlir
+.PHONY: metal-build-mlir - Build Metal MLIR.
 metal-build-mlir:
-	@echo "Metal - Build"
-	@cmake --build ${PROJECT_DIR}/build/${METAL_PRESET}
-	@cmake --build ${PROJECT_DIR}/build/${METAL_PRESET} --target check-metal mlir-doc
+	echo "Metal - Build"
+	cmake --build ${PROJECT_DIR}/build/${METAL_PRESET}
+	cmake --build ${PROJECT_DIR}/build/${METAL_PRESET} --target check-metal mlir-doc
 
-.PHONY: metal-build-runtime
+.PHONY: metal-build-runtime - Build Metal Runtime.
 metal-build-runtime:
-	@echo "Metal - Build Runtime"
+	echo "Metal - Build Runtime"
 	cd ${RUNTIME} && swift build -c release
 
 # _____________________________________________________________________________
 # Targets - Metal - Examples
 
-.PHONY: metal-build-examples
+.PHONY: metal-build-examples - Build all Metal Examples.
 metal-build-examples:	metal-build-runtime-example \
 						metal-build-example-life5x5_print \
 						metal-build-example-life5x5 \
 						metal-build-example-life100000000x5
 
-.PHONY: metal-build-runtime-example
+.PHONY: metal-build-runtime-example - Build Metal Runtime Example.
 metal-build-runtime-example:
-	@echo "Metal - Build Runtime Example"
-	@xcodebuild -project ./examples/MetalRuntimeExample/MetalRuntimeExample.xcodeproj \
+	echo "Metal - Build Runtime Example"
+	xcodebuild -project ./examples/MetalRuntimeExample/MetalRuntimeExample.xcodeproj \
 		-scheme MetalRuntimeExample
 
-.PHONY: metal-build-example-life5x5_print
+.PHONY: metal-build-example-life5x5_print - Build life5x5_print Example.
 metal-build-example-life5x5_print:
-	@echo "Metal - Build Example life5x5_print"
-	@mkdir -p ${EXAMPLE_BUILD_DIR}/life5x5_print
-	@sh ${MLIR_2_BIN_LIB} ${EXAMPLES}/life5x5_print.mlir ${EXAMPLE_BUILD_DIR}/life5x5_print ${LLVM_BUILD_DIR} ${METAL_PRESET}
+	echo "Metal - Build Example life5x5_print"
+	mkdir -p ${EXAMPLE_BUILD_DIR}/life5x5_print
+	sh ${MLIR_2_BIN_LIB} ${EXAMPLES}/life5x5_print.mlir ${EXAMPLE_BUILD_DIR}/life5x5_print ${LLVM_BUILD_DIR} ${METAL_PRESET}
 
-.PHONY: metal-build-example-life5x5
+.PHONY: metal-build-example-life5x5 - Build life5x5 Example.
 metal-build-example-life5x5:
-	@echo "Metal - Build Example life5x5"
-	@mkdir -p ${EXAMPLE_BUILD_DIR}/life5x5
-	@sh ${MLIR_2_BIN_LIB} ${EXAMPLES}/life5x5.mlir ${EXAMPLE_BUILD_DIR}/life5x5 ${LLVM_BUILD_DIR} ${METAL_PRESET}
+	echo "Metal - Build Example life5x5"
+	mkdir -p ${EXAMPLE_BUILD_DIR}/life5x5
+	sh ${MLIR_2_BIN_LIB} ${EXAMPLES}/life5x5.mlir ${EXAMPLE_BUILD_DIR}/life5x5 ${LLVM_BUILD_DIR} ${METAL_PRESET}
 
-.PHONY: metal-build-example-life100000000x5
+.PHONY: metal-build-example-life100000000x5 - Build life100000000x5 Example.
 metal-build-example-life100000000x5:
-	@echo "Metal - Build Example life100000000x5"
-	@mkdir -p ${EXAMPLE_BUILD_DIR}/life100000000x5
-	@sh ${MLIR_2_BIN_LIB} ${EXAMPLES}/life100000000x5.mlir ${EXAMPLE_BUILD_DIR}/life100000000x5 ${LLVM_BUILD_DIR} ${METAL_PRESET}
+	echo "Metal - Build Example life100000000x5"
+	mkdir -p ${EXAMPLE_BUILD_DIR}/life100000000x5
+	sh ${MLIR_2_BIN_LIB} ${EXAMPLES}/life100000000x5.mlir ${EXAMPLE_BUILD_DIR}/life100000000x5 ${LLVM_BUILD_DIR} ${METAL_PRESET}
 
-.PHONY: metal-run-examples
+.PHONY: metal-run-examples - Run all Metal Examples.
 metal-run-examples:	metal-run-example-life5x5_print \
 					metal-run-example-life5x5 \
 					metal-run-example-life100000000x5
 
-.PHONY: metal-run-example-life5x5_print
+.PHONY: metal-run-example-life5x5_print - Run life5x5_print Example.
 metal-run-example-life5x5_print:
-	@echo "Metal - Run Example life5x5_print"
+	echo "Metal - Run Example life5x5_print"
 	cd ${EXAMPLE_BUILD_DIR}/life5x5_print && ./life5x5_print
 
-.PHONY: metal-run-example-life5x5
+.PHONY: metal-run-example-life5x5 - Run life5x5 Example.
 metal-run-example-life5x5:
-	@echo "Metal - Run Example life5x5"
+	echo "Metal - Run Example life5x5"
 	cd ${EXAMPLE_BUILD_DIR}/life5x5 && ./life5x5
 
-.PHONY: metal-run-example-life100000000x5
+.PHONY: metal-run-example-life100000000x5 - Run life100000000x5 Example.
 metal-run-example-life100000000x5:
-	@echo "Metal - Run Example life100000000x5"
+	echo "Metal - Run Example life100000000x5"
 	cd ${EXAMPLE_BUILD_DIR}/life100000000x5 && ./life100000000x5
 
 # _____________________________________________________________________________

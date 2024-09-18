@@ -12,7 +12,6 @@
 
 #include "metal/IR/MetalDialect.h"
 #include "mlir/InitAllTranslations.h"
-#include "mlir/Support/LogicalResult.h"
 #include "mlir/Tools/mlir-translate/MlirTranslateMain.h"
 
 namespace mlir {

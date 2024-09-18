@@ -24,7 +24,7 @@ class KernelOp;
 
 class ModuleTranslation {
 public:
-  static mlir::LogicalResult translateModule(mlir::ModuleOp m,
+  static llvm::LogicalResult translateModule(mlir::ModuleOp m,
                                              raw_ostream &output);
 
 private:

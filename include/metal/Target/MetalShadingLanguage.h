@@ -8,13 +8,13 @@
 #ifndef METAL_METALSHADINGLANGUAGE_H
 #define METAL_METALSHADINGLANGUAGE_H
 
-#include "mlir/Support/LogicalResult.h"
+#include "llvm/Support/LogicalResult.h"
 
 namespace mlir {
 class ModuleOp;
 
 namespace metal {
-mlir::LogicalResult translateModuleToMetalShadingLanguage(mlir::ModuleOp m,
+llvm::LogicalResult translateModuleToMetalShadingLanguage(mlir::ModuleOp m,
                                                           raw_ostream &output);
 
 } // end namespace metal

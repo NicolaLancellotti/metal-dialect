@@ -50,7 +50,7 @@ void ModuleTranslation::indent() {
     _output << "  ";
 }
 
-mlir::LogicalResult ModuleTranslation::translateModule(mlir::ModuleOp m,
+llvm::LogicalResult ModuleTranslation::translateModule(mlir::ModuleOp m,
                                                        raw_ostream &output) {
   for (auto module : m.getOps<mlir::metal::ModuleOp>()) {
     ModuleTranslation translator{module, output};

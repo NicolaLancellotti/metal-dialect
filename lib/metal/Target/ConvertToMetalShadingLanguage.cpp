@@ -17,7 +17,7 @@
 
 using namespace mlir::metal;
 
-mlir::LogicalResult
+llvm::LogicalResult
 mlir::metal::translateModuleToMetalShadingLanguage(mlir::ModuleOp m,
                                                    raw_ostream &output) {
   return ModuleTranslation::translateModule(m, output);
