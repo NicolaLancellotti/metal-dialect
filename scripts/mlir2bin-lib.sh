@@ -36,7 +36,7 @@ $llc_bin $llvm_file -o $assembly_file  &&
 # Compile & Link
 clang $assembly_file $runtime_file \
   -L/usr/lib/swift \
-  -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx \
+  -L$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx \
   -framework CoreGraphics \
   -o $binary_file
 
